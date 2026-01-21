@@ -1,8 +1,6 @@
 // API Client - Handles API requests with standardized format
 // Currently uses localStorage as mock, but structured to match API specification
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api/v1';
-
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -21,11 +19,8 @@ export interface ApiError {
 }
 
 class ApiClient {
-  private baseURL: string;
-
-  constructor(baseURL: string = API_BASE_URL) {
-    this.baseURL = baseURL;
-  }
+  // Base URL kept for future real API calls
+  constructor() {}
 
   /**
    * Make a GET request
@@ -66,20 +61,6 @@ class ApiClient {
     //   body: JSON.stringify(data),
     // }).then(res => res.json())
     return this.mockRequest<T>('PATCH', endpoint, data);
-  }
-
-  /**
-   * Build URL with query parameters
-   */
-  private buildURL(endpoint: string, params?: Record<string, string | number>): string {
-    const url = `${this.baseURL}${endpoint}`;
-    if (!params) return url;
-
-    const queryString = Object.entries(params)
-      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-      .join('&');
-    
-    return `${url}?${queryString}`;
   }
 
   /**

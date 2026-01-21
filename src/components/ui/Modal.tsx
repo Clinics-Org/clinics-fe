@@ -1,6 +1,5 @@
 import * as React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Button } from './Button';
 import { cn } from '../../utils/cn';
 
 export interface ModalProps {

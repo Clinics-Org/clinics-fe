@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 
-const CLINIC_NAME = import.meta.env.VITE_CLINIC_NAME || 'Clinic OPD Management';
+const CLINIC_NAME = (import.meta as any).env?.VITE_CLINIC_NAME || 'Clinic OPD Management';
 
 export default function HomeScreen() {
   const navigate = useNavigate();

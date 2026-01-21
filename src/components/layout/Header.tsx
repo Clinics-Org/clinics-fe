@@ -1,10 +1,8 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
-const CLINIC_NAME = import.meta.env.VITE_CLINIC_NAME || 'Clinic OPD Management';
+const CLINIC_NAME = (import.meta as any).env?.VITE_CLINIC_NAME || 'Clinic OPD Management';
 
 export default function Header() {
-  const location = useLocation();
-
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-teal-100 shadow-sm md:relative">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">

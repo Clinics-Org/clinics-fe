@@ -10,7 +10,7 @@ export default function ConsultationScreen() {
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const loadVisit = async () => {
@@ -48,7 +48,7 @@ export default function ConsultationScreen() {
     }
 
     // Set new timeout for auto-save
-    saveTimeoutRef.current = setTimeout(() => {
+    saveTimeoutRef.current = window.setTimeout(() => {
       saveNotes();
     }, 500);
   };

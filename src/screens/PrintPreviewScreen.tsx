@@ -60,7 +60,7 @@ export default function PrintPreviewScreen() {
     year: 'numeric',
   });
 
-  const CLINIC_NAME = import.meta.env.VITE_CLINIC_NAME || 'Clinic OPD Management';
+  const CLINIC_NAME = (import.meta as any).env?.VITE_CLINIC_NAME || 'Clinic OPD Management';
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50">

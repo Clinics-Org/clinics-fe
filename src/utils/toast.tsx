@@ -33,22 +33,23 @@ export const toast = {
     duration?: number;
   }) {
     const id = toastId++;
+    const duration = options.duration ?? 5000;
     const toastData: ToastData = {
       id,
       title: options.title,
       description: options.description,
       variant: options.variant || 'default',
-      duration: options.duration || 5000,
+      duration,
     };
 
     toasts.push(toastData);
     notifyListeners();
 
     // Auto-remove after duration
-    if (toastData.duration > 0) {
+    if (duration > 0) {
       setTimeout(() => {
         this.dismiss(id);
-      }, toastData.duration);
+      }, duration);
     }
 
     return id;
