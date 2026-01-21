@@ -11,7 +11,7 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children, showSidebar = true }: AppLayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <Header />
       <div className="flex">
         {/* Sidebar - hidden on mobile, visible on desktop */}

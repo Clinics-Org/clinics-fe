@@ -163,7 +163,7 @@ export default function PrescriptionScreen() {
   const prescriptionPreview = medicines.filter((med) => med.name.trim() !== '');
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50 pb-32 md:pb-24">
+    <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden pb-32 md:pb-24">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
         <div className="bg-white rounded-lg border border-teal-200 shadow-sm p-4 md:p-6">
           <div className="mb-6">

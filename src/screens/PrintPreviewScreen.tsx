@@ -63,7 +63,7 @@ export default function PrintPreviewScreen() {
   const CLINIC_NAME = (import.meta as any).env?.VITE_CLINIC_NAME || 'Clinic OPD Management';
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden">
       <div className="max-w-6xl mx-auto px-6 py-6">
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-gray-900">Print Preview</h1>

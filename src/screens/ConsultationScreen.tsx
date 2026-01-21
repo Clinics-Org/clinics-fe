@@ -72,7 +72,7 @@ export default function ConsultationScreen() {
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
+    <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden">
       <div className="max-w-4xl mx-auto px-6 py-6">
         <Card className="border-teal-200">
           <CardHeader>

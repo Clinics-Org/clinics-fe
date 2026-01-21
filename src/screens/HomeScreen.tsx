@@ -11,7 +11,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-6">
+    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-6 overflow-x-hidden">
       <div className="text-center space-y-8 px-4 max-w-2xl">
         <div className="space-y-4">
           <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
