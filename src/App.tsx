@@ -18,7 +18,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomeScreen />} />
           <Route path="/patients" element={<AllPatientsScreen />} />
-          <Route path="/patient-search" element={<PatientSearchScreen />} />
+          <Route path="/visits" element={<PatientSearchScreen />} />
           <Route path="/visit/:visitId" element={<VisitContextScreen />} />
           <Route path="/consultation/:visitId" element={<ConsultationScreen />} />
           <Route path="/prescription/:visitId" element={<PrescriptionScreen />} />
