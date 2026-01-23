@@ -44,13 +44,22 @@ export default function PrescriptionScreen() {
       }
 
       setVisit(visitData);
-      if (visitData.prescription) {
-        setMedicines(visitData.prescription.medicines || []);
+      if (visitData.prescription && visitData.prescription.medicines.length > 0) {
+        setMedicines(visitData.prescription.medicines);
         setFollowUp(visitData.prescription.followUp || null);
         if (visitData.prescription.followUp) {
           setFollowUpValue(visitData.prescription.followUp.value.toString());
           setFollowUpUnit(visitData.prescription.followUp.unit);
         }
+      } else {
+        // Always start with at least one empty medicine row
+        const initialMedicine: Medicine = prescriptionService.createMedicine({
+          name: '',
+          dosage: '',
+          duration: '',
+          notes: '',
+        });
+        setMedicines([initialMedicine]);
       }
     };
 
@@ -74,7 +83,10 @@ export default function PrescriptionScreen() {
   };
 
   const handleRemoveMedicine = (id: string) => {
-    setMedicines(medicines.filter((med) => med.id !== id));
+    // Prevent removing the last medicine - always keep at least one
+    if (medicines.length > 1) {
+      setMedicines(medicines.filter((med) => med.id !== id));
+    }
   };
 
   const handleSavePrescription = async () => {
@@ -184,32 +196,42 @@ export default function PrescriptionScreen() {
 
         <div className="bg-white rounded-lg border border-teal-200 shadow-sm p-4 md:p-6">
           <div className="mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-              <h2 className="text-xl md:text-2xl font-semibold text-teal-900">Prescription</h2>
-              <Button onClick={handleAddMedicine} variant="outline" className="shadow-sm w-full sm:w-auto">
-                + Add Medicine
-              </Button>
-            </div>
+            <h2 className="text-xl md:text-2xl font-semibold text-teal-900 mb-4">Prescription</h2>
 
-            {medicines.length > 0 && (
-              <>
-                {/* Mobile Card Layout */}
-                <div className="md:hidden space-y-4">
-                  {medicines.map((medicine) => (
+            {/* Mobile Card Layout */}
+            <div className="md:hidden space-y-4">
+                  {medicines.map((medicine, index) => (
                     <div
                       key={medicine.id}
                       className="border border-teal-200 rounded-lg p-4 bg-white space-y-3"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-teal-700">Medicine #{medicines.indexOf(medicine) + 1}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveMedicine(medicine.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
-                        >
-                          Remove
-                        </Button>
+                        <span className="text-sm font-medium text-teal-700">Medicine #{index + 1}</span>
+                        <div className="flex items-center gap-2">
+                          {medicines.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveMedicine(medicine.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                            >
+                              Remove
+                            </Button>
+                          )}
+                          {index === medicines.length - 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleAddMedicine}
+                              className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8 px-2"
+                            >
+                              <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                              </svg>
+                              Add More
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <Input
                         label="Medicine Name"
@@ -251,10 +273,10 @@ export default function PrescriptionScreen() {
                       />
                     </div>
                   ))}
-                </div>
+            </div>
 
-                {/* Desktop Table Layout */}
-                <div className="hidden md:block overflow-x-auto border border-teal-100 rounded-lg">
+            {/* Desktop Table Layout */}
+            <div className="hidden md:block overflow-x-auto border border-teal-100 rounded-lg">
                   <Table>
                     <TableHeader className="bg-teal-50">
                       <TableRow>
@@ -266,7 +288,7 @@ export default function PrescriptionScreen() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {medicines.map((medicine) => (
+                      {medicines.map((medicine, index) => (
                         <TableRow key={medicine.id} className="hover:bg-teal-50/50">
                           <TableCell className="min-w-[250px]">
                             <Input
@@ -309,22 +331,37 @@ export default function PrescriptionScreen() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveMedicine(medicine.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              Remove
-                            </Button>
+                            <div className="flex items-center justify-end gap-2">
+                              {medicines.length > 1 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveMedicine(medicine.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                                >
+                                  Remove
+                                </Button>
+                              )}
+                              {index === medicines.length - 1 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleAddMedicine}
+                                  className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 h-8 px-2"
+                                >
+                                  <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                  </svg>
+                                  Add
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                </div>
-              </>
-            )}
+            </div>
           </div>
 
           {/* Follow-up Section */}
