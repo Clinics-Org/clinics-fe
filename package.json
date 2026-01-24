@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-icons": "npx @vite-pwa/assets-generator --preset minimal public/icon-source.svg"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -28,10 +29,12 @@
     "@tailwindcss/postcss": "^4.1.18",
     "@types/react": "^19.2.9",
     "@types/react-dom": "^19.2.3",
+    "@vite-pwa/assets-generator": "^1.0.2",
     "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.23",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite-plugin-pwa": "^1.2.0"
   }
 }
