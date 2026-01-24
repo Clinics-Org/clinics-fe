@@ -290,7 +290,7 @@ export default function PrescriptionScreen() {
             </div>
 
             {/* Desktop Table Layout */}
-            <div className="hidden md:block overflow-x-auto border border-teal-100 rounded-lg">
+            <div className="hidden md:block overflow-x-auto border border-teal-100 rounded-lg relative">
                   <Table>
                     <TableHeader className="bg-teal-50">
                       <TableRow>

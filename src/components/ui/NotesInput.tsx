@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { createPortal } from 'react-dom';
 import * as Label from '@radix-ui/react-label';
 import { cn } from '../../utils/cn';
 
@@ -30,7 +29,6 @@ const NotesInput = React.forwardRef<HTMLInputElement, NotesInputProps>(
     const inputRef = React.useRef<HTMLInputElement>(null);
     const containerRef = React.useRef<HTMLDivElement>(null);
     const dropdownRef = React.useRef<HTMLDivElement>(null);
-    const [dropdownPosition, setDropdownPosition] = React.useState<{ top: number; left: number; width: number } | null>(null);
 
     // Combine refs
     React.useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
@@ -48,12 +46,6 @@ const NotesInput = React.forwardRef<HTMLInputElement, NotesInputProps>(
     }, [value, predefinedOptions]);
 
     React.useEffect(() => {
-      if (showSuggestions && inputRef.current) {
-        updateDropdownPosition();
-      }
-    }, [showSuggestions, filteredOptions]);
-
-    React.useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (
           containerRef.current &&
@@ -65,28 +57,9 @@ const NotesInput = React.forwardRef<HTMLInputElement, NotesInputProps>(
         }
       };
 
-      const handleScroll = () => {
-        if (showSuggestions) {
-          updateDropdownPosition();
-        }
-      };
-
-      const handleResize = () => {
-        if (showSuggestions) {
-          updateDropdownPosition();
-        }
-      };
-
       document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', handleScroll, true);
-      window.addEventListener('resize', handleResize);
-      
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-        window.removeEventListener('scroll', handleScroll, true);
-        window.removeEventListener('resize', handleResize);
-      };
-    }, [showSuggestions]);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange(e.target.value);
@@ -99,19 +72,7 @@ const NotesInput = React.forwardRef<HTMLInputElement, NotesInputProps>(
       inputRef.current?.blur();
     };
 
-    const updateDropdownPosition = () => {
-      if (inputRef.current) {
-        const rect = inputRef.current.getBoundingClientRect();
-        setDropdownPosition({
-          top: rect.bottom + window.scrollY + 4,
-          left: rect.left + window.scrollX,
-          width: rect.width,
-        });
-      }
-    };
-
     const handleInputFocus = () => {
-      updateDropdownPosition();
       setShowSuggestions(true);
     };
 
@@ -154,15 +115,10 @@ const NotesInput = React.forwardRef<HTMLInputElement, NotesInputProps>(
             )}
             {...props}
           />
-          {showSuggestions && filteredOptions.length > 0 && dropdownPosition && typeof document !== 'undefined' && createPortal(
+          {showSuggestions && filteredOptions.length > 0 && (
             <div
               ref={dropdownRef}
-              className="fixed z-[9999] bg-white border border-gray-300 rounded-md shadow-xl max-h-48 overflow-auto"
-              style={{
-                top: `${dropdownPosition.top}px`,
-                left: `${dropdownPosition.left}px`,
-                width: `${dropdownPosition.width}px`,
-              }}
+              className="absolute z-[9999] w-full mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-48 overflow-auto"
             >
               {filteredOptions.map((option, index) => (
                 <button
@@ -174,8 +130,7 @@ const NotesInput = React.forwardRef<HTMLInputElement, NotesInputProps>(
                   {option}
                 </button>
               ))}
-            </div>,
-            document.body
+            </div>
           )}
         </div>
         {error && (
