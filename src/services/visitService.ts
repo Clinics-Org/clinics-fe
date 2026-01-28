@@ -2,32 +2,82 @@
 // Currently uses mock API client (localStorage), ready for backend integration
 
 import { apiClient } from './apiClient';
-import type { Visit } from '../types';
-
-export interface VisitHistoryItem {
-  id: string;
-  date: string;
-  status: 'waiting' | 'in_progress' | 'completed';
-  hasPrescription: boolean;
-}
+import type { Visit, Patient } from '../types';
 
 export const visitService = {
+  mapApiVisitToVisit(apiVisit: any, fallbackPatientId?: string): Visit {
+    return {
+      id: apiVisit.id,
+      patientId: apiVisit.patient?.id || apiVisit.patient_id || fallbackPatientId || '',
+      date: apiVisit.visit_date || apiVisit.created_at || new Date().toISOString(),
+      status: this.mapVisitStatus(apiVisit.visit_status),
+      notes: undefined,
+      prescription: undefined,
+      followUp: undefined,
+      // New API fields
+      patient: apiVisit.patient ? this.mapApiPatientToPatient(apiVisit.patient) : undefined,
+      clinic_id: apiVisit.clinic_id,
+      doctor_id: apiVisit.doctor_id,
+      visit_reason: apiVisit.visit_reason,
+      visit_status: apiVisit.visit_status,
+      visit_date: apiVisit.visit_date,
+      created_at: apiVisit.created_at,
+      updated_at: apiVisit.updated_at,
+    };
+  },
+
   /**
    * Create a new visit
-   * POST /api/v1/visits
+   * POST /api/visits
    */
-  async create(visitData: { patientId: string; date?: string; status?: 'waiting' | 'in_progress' | 'completed' }): Promise<Visit> {
-    const response = await apiClient.post<Visit>('/visits', {
-      patientId: visitData.patientId,
-      date: visitData.date || new Date().toISOString(),
-      status: visitData.status || 'waiting',
-    });
+  async create(visitData: { 
+    patientId: string; 
+    visitReason?: string;
+    status?: 'waiting' | 'in_progress' | 'completed';
+  }): Promise<Visit> {
+    try {
+      // Get clinic ID
+      const { clinicService } = await import('./clinicService');
+      const clinicId = clinicService.getClinicId();
 
-    if (!response.success || !response.data) {
-      throw new Error(response.error?.message || 'Failed to create visit');
+      // Map status to API format
+      const visitStatusMap: Record<string, 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'> = {
+        'waiting': 'WAITING',
+        'in_progress': 'IN_PROGRESS',
+        'completed': 'COMPLETED',
+      };
+      const visitStatus = visitStatusMap[visitData.status || 'waiting'] || 'WAITING';
+
+      // TODO: Get doctor_id from user context or settings
+      // For now, using a placeholder - this should be fetched from user/auth context
+      const doctorId = '948cfcaf-5295-431c-b531-76ff875b2dae'; // Hardcoded for now
+
+      const apiRequestData = {
+        patient_id: visitData.patientId,
+        clinic_id: clinicId,
+        doctor_id: doctorId,
+        visit_reason: visitData.visitReason || 'General consultation',
+        visit_status: visitStatus,
+      };
+
+      console.log('📤 Creating visit with API data:', apiRequestData);
+
+      const response = await apiClient.post<any>('/visits', apiRequestData);
+
+      if (!response.success || !response.data) {
+        console.error('❌ Failed to create visit:', response.error);
+        throw new Error(response.error?.message || 'Failed to create visit');
+      }
+
+      const apiVisit = response.data;
+      const mappedVisit: Visit = this.mapApiVisitToVisit(apiVisit, visitData.patientId);
+
+      console.log('✅ Visit created successfully:', mappedVisit);
+      return mappedVisit;
+    } catch (error: any) {
+      console.error('❌ Error creating visit:', error);
+      throw error;
     }
-
-    return response.data;
   },
 
   /**
@@ -35,48 +85,32 @@ export const visitService = {
    * GET /api/v1/visits/:visitId
    */
   async getById(id: string): Promise<Visit | null> {
-    const response = await apiClient.get<Visit>(`/visits/${id}`);
+    const response = await apiClient.get<any>(`/visits/${id}`);
 
-    if (!response.success || !response.data) {
-      return null;
-    }
+    if (!response.success || !response.data) return null;
 
-    return response.data;
+    return this.mapApiVisitToVisit(response.data);
   },
 
   /**
    * Get patient visit history
-   * GET /api/v1/visits/patient/:patientId?limit={limit}&status={status}
+   * GET /api/visits/patient/:patientId
    */
   async getByPatientId(
     patientId: string,
-    limit: number = 20,
-    status?: 'waiting' | 'in_progress' | 'completed'
+    limit: number = 50
   ): Promise<Visit[]> {
-    const params: Record<string, string | number> = { limit };
-    if (status) {
-      params.status = status;
-    }
+    const response = await apiClient.get<any[]>(`/visits/patient/${patientId}`);
 
-    const response = await apiClient.get<VisitHistoryItem[]>(
-      `/visits/patient/${patientId}`,
-      params
-    );
+    if (!response.success || !response.data) return [];
 
-    if (!response.success || !response.data) {
-      return [];
-    }
+    const apiVisits = Array.isArray(response.data) ? response.data : [];
+    const mapped = apiVisits.map((v) => this.mapApiVisitToVisit(v, patientId));
 
-    // Convert history items to full visits by fetching each one
-    const visits: Visit[] = [];
-    for (const item of response.data) {
-      const visit = await this.getById(item.id);
-      if (visit) {
-        visits.push(visit);
-      }
-    }
-
-    return visits;
+    // Client-side limit (backend may not support it here)
+    return mapped
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, limit);
   },
 
   /**
@@ -84,8 +118,8 @@ export const visitService = {
    * Note: This now checks for 'in_progress' status instead of 'active'
    */
   async getActiveByPatientId(patientId: string): Promise<Visit | null> {
-    const visits = await this.getByPatientId(patientId, 1, 'in_progress');
-    return visits.length > 0 ? visits[0] : null;
+    const visits = await this.getByPatientId(patientId, 50);
+    return visits.find((v) => v.status === 'in_progress') || null;
   },
 
   /**
@@ -186,5 +220,109 @@ export const visitService = {
 
     // Return updated visit
     return this.getById(id);
+  },
+
+  /**
+   * Get all visits for a clinic
+   * GET /api/visits/{clinic_id}/get-all/?page=1&page_size=20&date=YYYY-MM-DD
+   */
+  async getAllVisits(page: number = 1, pageSize: number = 20, date?: string): Promise<{ visits: Visit[]; count: number; next: string | null; previous: string | null }> {
+    try {
+      const { clinicService } = await import('./clinicService');
+      const clinicId = clinicService.getClinicId();
+
+      const params: Record<string, string | number> = {
+        page,
+        page_size: pageSize,
+      };
+
+      // Add date parameter if provided - convert from YYYY-MM-DD to DD-MM-YYYY
+      if (date) {
+        // date is in YYYY-MM-DD format from the date input
+        // Convert to DD-MM-YYYY format for the API
+        const [year, month, day] = date.split('-');
+        params.date = `${day}-${month}-${year}`;
+      }
+
+      const response = await apiClient.get<any>(`/visits/${clinicId}/get-all/`, params);
+
+      if (!response.success || !response.data) {
+        console.error('❌ Failed to get all visits:', response.error);
+        return { visits: [], count: 0, next: null, previous: null };
+      }
+
+      // Handle paginated response
+      const apiData = response.data;
+      const results = apiData.results || (Array.isArray(apiData) ? apiData : []);
+      
+      const visits: Visit[] = results.map((apiVisit: any) => ({
+        id: apiVisit.id,
+        patientId: apiVisit.patient?.id || '',
+        date: apiVisit.visit_date || apiVisit.created_at || new Date().toISOString(),
+        status: this.mapVisitStatus(apiVisit.visit_status),
+        notes: undefined,
+        prescription: undefined,
+        followUp: undefined,
+        // New API fields
+        patient: apiVisit.patient ? this.mapApiPatientToPatient(apiVisit.patient) : undefined,
+        clinic_id: apiVisit.clinic_id,
+        doctor_id: apiVisit.doctor_id,
+        visit_reason: apiVisit.visit_reason,
+        visit_status: apiVisit.visit_status,
+        visit_date: apiVisit.visit_date,
+        created_at: apiVisit.created_at,
+        updated_at: apiVisit.updated_at,
+      }));
+
+      return {
+        visits,
+        count: apiData.count || visits.length,
+        next: apiData.next || null,
+        previous: apiData.previous || null,
+      };
+    } catch (error: any) {
+      console.error('❌ Error getting all visits:', error);
+      return { visits: [], count: 0, next: null, previous: null };
+    }
+  },
+
+  /**
+   * Map API visit status to our format
+   */
+  mapVisitStatus(apiStatus: string | undefined): 'waiting' | 'in_progress' | 'completed' {
+    if (!apiStatus) return 'waiting';
+    const upper = apiStatus.toUpperCase();
+    if (upper === 'WAITING') return 'waiting';
+    if (upper === 'IN_PROGRESS' || upper === 'INPROGRESS') return 'in_progress';
+    if (upper === 'COMPLETED') return 'completed';
+    return 'waiting';
+  },
+
+  /**
+   * Map API patient to Patient format
+   */
+  mapApiPatientToPatient(apiPatient: any): Patient {
+    const mapGender = (apiGender: string | undefined): 'M' | 'F' | undefined => {
+      if (!apiGender) return undefined;
+      const upper = apiGender.toUpperCase();
+      if (upper === 'MALE' || upper === 'M') return 'M';
+      if (upper === 'FEMALE' || upper === 'F') return 'F';
+      return undefined;
+    };
+
+    // Only use apiPatient.age if provided - do not calculate from date_of_birth
+    let age: number | undefined = undefined;
+    if (apiPatient.age !== undefined && apiPatient.age !== null && typeof apiPatient.age === 'number') {
+      age = apiPatient.age;
+    }
+
+    return {
+      id: apiPatient.id,
+      name: apiPatient.name || '',
+      mobile: apiPatient.mobile_number || apiPatient.mobile || '',
+      age: age,
+      gender: mapGender(apiPatient.gender),
+      createdAt: apiPatient.created_at || apiPatient.createdAt || new Date().toISOString(),
+    };
   },
 };

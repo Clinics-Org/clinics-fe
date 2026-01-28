@@ -8,14 +8,17 @@ import { visitService } from '../services/visitService';
 import { patientService } from '../services/patientService';
 import { printUtils } from '../utils/print';
 import { visitSteps } from '../utils/visitStepper';
+import { useClinic } from '../hooks/useClinic';
 import type { Patient, Visit } from '../types';
 
 export default function PrintPreviewScreen() {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
+  const { clinic } = useClinic();
   const [visit, setVisit] = useState<Visit | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState<'a4' | 'thermal'>('a4');
+  const clinicName = clinic?.name || 'Clinic OPD Management';
 
   useEffect(() => {
     const loadData = async () => {
@@ -42,9 +45,9 @@ export default function PrintPreviewScreen() {
     if (!visit || !patient || !visit.prescription) return;
 
     if (activeTab === 'a4') {
-      printUtils.printA4(patient, visit, visit.prescription);
+      printUtils.printA4(patient, visit, visit.prescription, clinicName);
     } else {
-      printUtils.printThermal(patient, visit, visit.prescription);
+      printUtils.printThermal(patient, visit, visit.prescription, clinicName);
     }
   };
 
@@ -61,8 +64,6 @@ export default function PrintPreviewScreen() {
     month: 'long',
     year: 'numeric',
   });
-
-  const CLINIC_NAME = (import.meta as any).env?.VITE_CLINIC_NAME || 'Clinic OPD Management';
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden">
@@ -102,7 +103,7 @@ export default function PrintPreviewScreen() {
               <div className="max-w-[210mm] mx-auto min-w-0">
                 {/* A4 Layout */}
                 <div className="text-center mb-6 md:mb-8 pb-3 md:pb-4 border-b-2 border-black">
-                  <div className="text-lg md:text-2xl font-bold break-words">{CLINIC_NAME}</div>
+                  <div className="text-lg md:text-2xl font-bold break-words">{clinicName}</div>
                 </div>
 
                 <div className="mb-6 space-y-2 text-sm md:text-base">
@@ -164,13 +165,13 @@ export default function PrintPreviewScreen() {
               <div className="max-w-[70mm] mx-auto font-mono text-xs">
                 {/* Thermal Layout */}
                 <div className="text-center mb-4 pb-2 border-b border-dashed border-black">
-                  <div className="text-sm font-bold">{CLINIC_NAME}</div>
+                  <div className="text-sm font-bold">{clinicName}</div>
                 </div>
 
                 <div className="mb-4 space-y-1 text-xs">
                   <div><strong>{patient.name}</strong></div>
                   <div>
-                    {patient.age ? `Age: ${patient.age}` : ''}{' '}
+                    {patient.age !== undefined && patient.age !== null ? `Age: ${patient.age}` : 'Age: N/A'}{' '}
                     {patient.gender && `| ${patient.gender === 'M' ? 'M' : 'F'}`}
                   </div>
                   <div>{patient.mobile} | {new Date(visit.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>

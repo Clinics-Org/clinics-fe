@@ -89,7 +89,7 @@ export default function PrescriptionScreen() {
   const handleRemoveMedicine = (id: string) => {
     // Prevent removing the last medicine - always keep at least one
     if (medicines.length > 1) {
-      setMedicines(medicines.filter((med) => med.id !== id));
+    setMedicines(medicines.filter((med) => med.id !== id));
     }
   };
 
@@ -212,8 +212,8 @@ export default function PrescriptionScreen() {
           <div className="mb-6">
             <h2 className="text-xl md:text-2xl font-semibold text-teal-900 mb-4">Prescription</h2>
 
-            {/* Mobile Card Layout */}
-            <div className="md:hidden space-y-4">
+                {/* Mobile Card Layout */}
+                <div className="md:hidden space-y-4">
                   {medicines.map((medicine, index) => (
                     <div
                       key={medicine.id}
@@ -223,14 +223,14 @@ export default function PrescriptionScreen() {
                         <span className="text-sm font-medium text-teal-700">Medicine #{index + 1}</span>
                         <div className="flex items-center gap-2">
                           {medicines.length > 1 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveMedicine(medicine.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
-                            >
-                              Remove
-                            </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveMedicine(medicine.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                        >
+                          Remove
+                        </Button>
                           )}
                           {index === medicines.length - 1 && (
                             <Button
@@ -287,9 +287,9 @@ export default function PrescriptionScreen() {
                       />
                     </div>
                   ))}
-            </div>
+                </div>
 
-            {/* Desktop Table Layout */}
+                {/* Desktop Table Layout */}
             <div className="hidden md:block overflow-x-auto border border-teal-100 rounded-lg relative">
                   <Table>
                     <TableHeader className="bg-teal-50">
@@ -347,14 +347,14 @@ export default function PrescriptionScreen() {
                           <TableCell>
                             <div className="flex items-center justify-end gap-2">
                               {medicines.length > 1 && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveMedicine(medicine.id)}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveMedicine(medicine.id)}
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
-                                >
-                                  Remove
-                                </Button>
+                            >
+                              Remove
+                            </Button>
                               )}
                               {index === medicines.length - 1 && (
                                 <Button
@@ -375,7 +375,7 @@ export default function PrescriptionScreen() {
                       ))}
                     </TableBody>
                   </Table>
-            </div>
+                </div>
           </div>
 
           {/* Follow-up Section */}

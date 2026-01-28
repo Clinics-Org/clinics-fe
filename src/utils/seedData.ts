@@ -267,7 +267,7 @@ export function seedDummyData(force: boolean = false) {
       notes: 'New patient. Complains of back pain after gym workout. Advised rest and pain relief.',
       prescription: {
         medicines: [
-          {
+    {
             id: 'med_8',
             name: 'Ibuprofen',
             dosage: '400mg',
@@ -429,11 +429,11 @@ export function seedDummyData(force: boolean = false) {
 
     // Save to localStorage
     if (shouldSeedPatients) {
-      localStorage.setItem(PATIENTS_KEY, JSON.stringify(dummyPatients));
+    localStorage.setItem(PATIENTS_KEY, JSON.stringify(dummyPatients));
       console.log('Seeded patients:', dummyPatients.length);
     }
     if (shouldSeedVisits) {
-      localStorage.setItem(VISITS_KEY, JSON.stringify(dummyVisits));
+    localStorage.setItem(VISITS_KEY, JSON.stringify(dummyVisits));
       console.log('Seeded visits:', dummyVisits.length);
     }
     console.log('Dummy data seeding completed:', {

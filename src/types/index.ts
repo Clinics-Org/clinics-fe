@@ -33,4 +33,23 @@ export interface Visit {
   prescription?: Prescription;
   followUp?: FollowUp;
   status: 'waiting' | 'in_progress' | 'completed';
+  // New API fields
+  patient?: Patient;
+  clinic_id?: string;
+  doctor_id?: string;
+  visit_reason?: string;
+  visit_status?: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED';
+  visit_date?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Clinic {
+  id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }

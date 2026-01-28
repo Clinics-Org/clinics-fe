@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
-
-const CLINIC_NAME = (import.meta as any).env?.VITE_CLINIC_NAME || 'Clinic OPD Management';
+import { useClinic } from '../hooks/useClinic';
 
 export default function HomeScreen() {
   const navigate = useNavigate();
+  const { clinic } = useClinic();
+  const clinicName = clinic?.name || 'Clinic OPD Management';
 
   const handleStartOPD = () => {
     navigate('/visits');
@@ -30,7 +31,7 @@ export default function HomeScreen() {
             </svg>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
-            Welcome to {CLINIC_NAME}
+            Welcome to {clinicName}
           </h1>
           <p className="text-lg text-gray-600">
             Manage your outpatient department efficiently

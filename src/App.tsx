@@ -3,7 +3,8 @@ import { Toaster } from './utils/toast';
 import AppLayout from './components/layout/AppLayout';
 import HomeScreen from './screens/HomeScreen';
 import AllPatientsScreen from './screens/AllPatientsScreen';
-import PatientSearchScreen from './screens/PatientSearchScreen';
+import PatientDetailsScreen from './screens/PatientDetailsScreen';
+import VisitsScreen from './screens/VisitsScreen';
 import VisitContextScreen from './screens/VisitContextScreen';
 import ConsultationScreen from './screens/ConsultationScreen';
 import PrescriptionScreen from './screens/PrescriptionScreen';
@@ -18,7 +19,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomeScreen />} />
           <Route path="/patients" element={<AllPatientsScreen />} />
-          <Route path="/visits" element={<PatientSearchScreen />} />
+          <Route path="/patient/:patientId" element={<PatientDetailsScreen />} />
+          <Route path="/visits" element={<VisitsScreen />} />
           <Route path="/visit/:visitId" element={<VisitContextScreen />} />
           <Route path="/consultation/:visitId" element={<ConsultationScreen />} />
           <Route path="/prescription/:visitId" element={<PrescriptionScreen />} />

@@ -95,7 +95,7 @@ export default function VisitContextScreen() {
         <Card className="mb-6 border-teal-200">
           <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl text-teal-900">{patient.name}</CardTitle>
+            <CardTitle className="text-2xl text-teal-900">{patient.name}</CardTitle>
               <div className="flex items-center gap-2">
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                   visit.status === 'waiting' 
@@ -137,13 +137,13 @@ export default function VisitContextScreen() {
           </CardContent>
         </Card>
 
-        {/* Primary Actions */}
-        <div className="mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+                  {/* Primary Actions */}
+          <div className="mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -166,69 +166,69 @@ export default function VisitContextScreen() {
                     Start Consultation
                   </Button>
                 ) : (
-                  <Button
-                    onClick={handleConsultClick}
-                    size="lg"
-                    className="w-full"
-                    autoFocus
-                  >
-                    Consult & Write Prescription
-                  </Button>
+                <Button
+                  onClick={handleConsultClick}
+                  size="lg"
+                  className="w-full"
+                  autoFocus
+                >
+                  Consult & Write Prescription
+                </Button>
                 )}
               </CardContent>
             </Card>
           </div>
 
-        {/* Visit History */}
+          {/* Visit History */}
         <div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Visit History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {visitHistory.length > 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Visit History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {visitHistory.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {visitHistory.map((historyVisit) => (
-                    <div
-                      key={historyVisit.id}
-                      className={`p-3 rounded-lg border transition-colors ${
-                        historyVisit.id === visit.id
-                          ? 'bg-teal-50 border-teal-300 shadow-sm'
-                          : 'bg-white border-teal-200 hover:bg-teal-50 cursor-pointer'
-                      }`}
-                      onClick={() => {
-                        if (historyVisit.id !== visit.id && historyVisit.prescription) {
-                          handleViewOldPrescription(historyVisit);
-                        }
-                      }}
-                    >
-                      <div className="text-sm font-medium text-gray-900">
-                        {new Date(historyVisit.date).toLocaleDateString('en-IN', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">
+                    {visitHistory.map((historyVisit) => (
+                      <div
+                        key={historyVisit.id}
+                        className={`p-3 rounded-lg border transition-colors ${
+                          historyVisit.id === visit.id
+                            ? 'bg-teal-50 border-teal-300 shadow-sm'
+                            : 'bg-white border-teal-200 hover:bg-teal-50 cursor-pointer'
+                        }`}
+                        onClick={() => {
+                          if (historyVisit.id !== visit.id && historyVisit.prescription) {
+                            handleViewOldPrescription(historyVisit);
+                          }
+                        }}
+                      >
+                        <div className="text-sm font-medium text-gray-900">
+                          {new Date(historyVisit.date).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">
                         {historyVisit.status === 'waiting' 
                           ? 'Waiting'
                           : historyVisit.status === 'in_progress'
                           ? 'In Progress'
                           : 'Completed'}
-                        {historyVisit.prescription &&
-                          ` • ${historyVisit.prescription.medicines.length} medicine(s)`}
+                          {historyVisit.prescription &&
+                            ` • ${historyVisit.prescription.medicines.length} medicine(s)`}
+                        </div>
+                        {historyVisit.id === visit.id && (
+                          <div className="text-xs text-teal-700 mt-1 font-semibold">Current Visit</div>
+                        )}
                       </div>
-                      {historyVisit.id === visit.id && (
-                        <div className="text-xs text-teal-700 mt-1 font-semibold">Current Visit</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-gray-500">No previous visits</div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">No previous visits</div>
+                )}
+              </CardContent>
+            </Card>
         </div>
       </div>
     </div>

@@ -26,14 +26,14 @@ A React TypeScript application for managing Outpatient Department (OPD) operatio
 ### Other Commands
 
 - **Build for production:**
-  ```bash
-  npm run build
-  ```
+   ```bash
+   npm run build
+   ```
 
 - **Preview production build:**
-  ```bash
-  npm run preview
-  ```
+   ```bash
+   npm run preview
+   ```
 
 ## 📱 Progressive Web App (PWA)
 

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, Modal, DateFilter } from '../components/ui';
+import { Button, Input, Modal } from '../components/ui';
 import { Card, CardContent } from '../components/ui/Card';
 import { patientService } from '../services/patientService';
-import { visitService } from '../services/visitService';
+import { toast } from '../utils/toast';
 import type { Patient } from '../types';
 
 export default function AllPatientsScreen() {
@@ -11,11 +11,6 @@ export default function AllPatientsScreen() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDate, setSelectedDate] = useState(() => {
-    // Default to today's date in YYYY-MM-DD format
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPatient, setNewPatient] = useState({
@@ -31,10 +26,10 @@ export default function AllPatientsScreen() {
   }, []);
 
   useEffect(() => {
-    const filterPatients = async () => {
+    const filterPatients = () => {
       let filtered = [...patients];
 
-      // Apply search filter
+      // Apply search filter only
       if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(
@@ -44,54 +39,40 @@ export default function AllPatientsScreen() {
         );
       }
 
-      // Apply date filter - show patients who have visits on the selected date
-      if (selectedDate) {
-        const filteredByDate: Patient[] = [];
-        for (const patient of filtered) {
-          const visits = await visitService.getByPatientId(patient.id);
-          const hasVisitOnDate = visits.some((visit) => {
-            const visitDate = new Date(visit.date).toISOString().split('T')[0];
-            return visitDate === selectedDate;
-          });
-          if (hasVisitOnDate) {
-            filteredByDate.push(patient);
-          }
-        }
-        filtered = filteredByDate;
-      }
-
       setFilteredPatients(filtered);
     };
 
     filterPatients();
-  }, [searchQuery, selectedDate, patients]);
+  }, [searchQuery, patients]);
 
   const loadPatients = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Loading patients...');
       const allPatients = await patientService.getAll();
+      console.log('📊 Patients loaded:', {
+        count: allPatients.length,
+        patients: allPatients,
+        firstPatient: allPatients[0] ? {
+          id: allPatients[0].id,
+          name: allPatients[0].name,
+          keys: Object.keys(allPatients[0]),
+          mobile: allPatients[0].mobile,
+          phone: (allPatients[0] as any).phone,
+          mobileNumber: (allPatients[0] as any).mobileNumber,
+        } : null,
+      });
       setPatients(allPatients);
       setFilteredPatients(allPatients);
-      console.log('Loaded patients:', allPatients.length);
+      console.log('✅ State updated - patients:', allPatients.length, 'filtered:', allPatients.length);
     } catch (error) {
-      console.error('Failed to load patients:', error);
+      console.error('❌ Failed to load patients:', error);
     } finally {
       setLoading(false);
+      console.log('🏁 Loading complete');
     }
   };
 
-  const handleStartVisit = async (e: React.MouseEvent, patient: Patient) => {
-    e.stopPropagation(); // Prevent card click
-    try {
-      const visit = await visitService.create({ 
-        patientId: patient.id,
-        status: 'waiting'
-      });
-      navigate(`/visit/${visit.id}`);
-    } catch (error) {
-      console.error('Failed to create visit:', error);
-    }
-  };
 
   const handleAddNewPatient = () => {
     setIsModalOpen(true);
@@ -109,6 +90,9 @@ export default function AllPatientsScreen() {
     } else if (!/^\d{10}$/.test(newPatient.mobile)) {
       newErrors.mobile = 'Mobile must be 10 digits';
     }
+    if (!newPatient.gender) {
+      newErrors.gender = 'Gender is required';
+    }
     if (newPatient.age && (isNaN(Number(newPatient.age)) || Number(newPatient.age) < 0)) {
       newErrors.age = 'Age must be a valid number';
     }
@@ -122,36 +106,47 @@ export default function AllPatientsScreen() {
     }
 
     try {
+      console.log('🔄 Creating patient...');
       const patient = await patientService.create({
         name: newPatient.name.trim(),
         mobile: newPatient.mobile.trim(),
         age: newPatient.age ? Number(newPatient.age) : undefined,
-        gender: newPatient.gender || undefined,
+        gender: newPatient.gender as 'M' | 'F', // Gender is required, validated in form
       });
 
-      // Create visit for new patient with waiting status
-      const visit = await visitService.create({ 
-        patientId: patient.id,
-        status: 'waiting'
-      });
+      console.log('✅ Patient created:', patient);
+
+      // Show success message
+      toast.success('Patient created successfully!');
+
+      // Close modal
       setIsModalOpen(false);
-      navigate(`/visit/${visit.id}`);
-    } catch (error) {
-      console.error('Failed to create patient:', error);
+
+      // Reload patients list to show the new patient
+      await loadPatients();
+    } catch (error: any) {
+      console.error('❌ Failed to create patient:', error);
+      toast.error(error?.message || 'Failed to create patient. Please try again.');
     }
   };
 
-  const maskMobile = (mobile: string): string => {
+  const maskMobile = (mobile: string | undefined): string => {
+    if (!mobile || typeof mobile !== 'string') return 'N/A';
     if (mobile.length <= 4) return mobile;
     return '****' + mobile.slice(-4);
   };
 
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
   };
 
   if (loading) {
@@ -161,6 +156,14 @@ export default function AllPatientsScreen() {
       </div>
     );
   }
+
+  // Debug info
+  console.log('🔍 Render Debug:', {
+    patientsCount: patients.length,
+    filteredCount: filteredPatients.length,
+    loading,
+    searchQuery,
+  });
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden">
@@ -180,24 +183,22 @@ export default function AllPatientsScreen() {
 
         <Card className="border-teal-200 mb-6">
           <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <Input
-                type="text"
-                placeholder="Search patients by name or mobile..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1"
-              />
-              <div className="md:w-48">
-                <DateFilter
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-            </div>
+            <Input
+              type="text"
+              placeholder="Search patients by name or mobile..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
           </CardContent>
         </Card>
+
+        {/* Debug info - remove in production */}
+        {import.meta.env.DEV && (
+          <div className="mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+            <strong>Debug:</strong> Patients: {patients.length}, Filtered: {filteredPatients.length}, Loading: {loading ? 'Yes' : 'No'}
+          </div>
+        )}
 
         {filteredPatients.length > 0 ? (
           <div className="grid gap-4">
@@ -205,41 +206,34 @@ export default function AllPatientsScreen() {
               <Card
                 key={patient.id}
                 className="border-teal-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
-                // onClick={() => handlePatientClick(patient)}
+                onClick={() => navigate(`/patient/${patient.id}`)}
               > 
                 <CardContent className="p-4 md:p-6">
-                  <div className="flex items-center md:items-start justify-between gap-3 md:gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 md:gap-4">
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base md:text-lg flex-shrink-0">
-                          {patient.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate">
-                            {patient.name}
-                          </h3>
-                          <div className="mt-1 text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
-                            <span className="whitespace-nowrap">📱 {maskMobile(patient.mobile)}</span>
-                            {patient.age && <span className="whitespace-nowrap">👤 Age: {patient.age}</span>}
-                            {patient.gender && (
-                              <span className="whitespace-nowrap">
-                                {patient.gender === 'M' ? '♂' : '♀'} {patient.gender === 'M' ? 'Male' : 'Female'}
-                              </span>
-                            )}
-                            <span className="whitespace-nowrap">📅 Joined: {formatDate(patient.createdAt)}</span>
-                          </div>
-                        </div>
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base md:text-lg flex-shrink-0">
+                      {patient.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 truncate">
+                        {patient.name}
+                      </h3>
+                      <div className="mt-1 text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+                        {patient.mobile && (
+                          <span className="whitespace-nowrap">📱 {maskMobile(patient.mobile)}</span>
+                        )}
+                        <span className="whitespace-nowrap">
+                          👤 Age: {patient.age !== undefined && patient.age !== null ? patient.age : 'N/A'}
+                        </span>
+                        {patient.gender && (
+                          <span className="whitespace-nowrap">
+                            {patient.gender === 'M' ? '♂' : '♀'} {patient.gender === 'M' ? 'Male' : 'Female'}
+                          </span>
+                        )}
+                        {patient.createdAt && (
+                          <span className="whitespace-nowrap">📅 Joined: {formatDate(patient.createdAt)}</span>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center justify-center gap-2 shrink-0">
-                      <Button
-                        onClick={(e) => handleStartVisit(e, patient)}
-                        size="sm"
-                        className="shrink-0 w-full sm:w-auto"
-                      >
-                        Start Visit
-                      </Button>
-                    </div> 
                   </div>
                 </CardContent>
               </Card>
@@ -337,7 +331,7 @@ export default function AllPatientsScreen() {
           />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Gender (optional)
+              Gender *
             </label>
             <div className="flex gap-4">
               <label className="flex items-center">
@@ -363,6 +357,9 @@ export default function AllPatientsScreen() {
                 Female
               </label>
             </div>
+            {errors.gender && (
+              <p className="mt-1 text-sm text-red-600">{errors.gender}</p>
+            )}
           </div>
         </div>
       </Modal>

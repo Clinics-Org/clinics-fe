@@ -19,17 +19,46 @@ export interface ApiError {
 }
 
 class ApiClient {
-  // Base URL kept for future real API calls
-  constructor() {}
+  private baseURL: string;
+
+  constructor() {
+    // Get base URL from environment variable or use default
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+  }
+
+  /**
+   * Build full URL with query parameters
+   */
+  private buildURL(endpoint: string, params?: Record<string, string | number>): string {
+    const url = new URL(endpoint.startsWith('http') ? endpoint : `${this.baseURL}${endpoint}`);
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.append(key, String(value));
+      });
+    }
+    return url.toString();
+  }
 
   /**
    * Make a GET request
    */
   async get<T>(endpoint: string, params?: Record<string, string | number>): Promise<ApiResponse<T>> {
-    // For now, use localStorage mock
-    // When backend is ready, replace with: 
-    // const url = this.buildURL(endpoint, params);
-    // return fetch(url).then(res => res.json())
+    // Check if this is a real API endpoint that should use HTTP
+    if (
+      endpoint.startsWith('/patients/clinic/') || 
+      endpoint.startsWith('/clinics/') ||
+      endpoint.startsWith('/patients/search') ||
+      endpoint.startsWith('/patient/') || // /patient/:id (singular)
+      (endpoint.startsWith('/patients/') && !endpoint.startsWith('/patients/clinic/') && !endpoint.startsWith('/patients/search')) || // fallback for /patients/:id
+      endpoint.startsWith('/visits/patient/') || // /visits/patient/:patientId
+      (endpoint.startsWith('/visits/') && endpoint.includes('/get-all/')) ||
+      endpoint.match(/^\/visits\/[^/]+$/) || // /visits/:visitId
+      (endpoint.startsWith('/visits/') && !endpoint.includes('/patient/'))
+    ) {
+      return this.realRequest<T>('GET', endpoint, undefined, params);
+    }
+    
+    // For other endpoints, use mock for now
     return this.mockRequest<T>('GET', endpoint, undefined, params);
   }
 
@@ -37,14 +66,20 @@ class ApiClient {
    * Make a POST request
    */
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    // For now, use localStorage mock
-    // When backend is ready, replace with:
-    // const url = `${this.baseURL}${endpoint}`;
-    // return fetch(url, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(data),
-    // }).then(res => res.json())
+    // Check if this is a real API endpoint that should use HTTP
+    if (
+      endpoint.startsWith('/patients/clinic/') || 
+      endpoint.startsWith('/clinics/') ||
+      endpoint === '/patient' || // POST /api/patient (singular for create)
+      endpoint === '/patients' || // Keep for backward compatibility
+      endpoint.startsWith('/patients/') ||
+      endpoint === '/visits' ||
+      endpoint.startsWith('/visits/')
+    ) {
+      return this.realRequest<T>('POST', endpoint, data);
+    }
+    
+    // For other endpoints, use mock for now
     return this.mockRequest<T>('POST', endpoint, data);
   }
 
@@ -52,15 +87,212 @@ class ApiClient {
    * Make a PATCH request
    */
   async patch<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    // For now, use localStorage mock
-    // When backend is ready, replace with:
-    // const url = `${this.baseURL}${endpoint}`;
-    // return fetch(url, {
-    //   method: 'PATCH',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(data),
-    // }).then(res => res.json())
+    // Check if this is a real API endpoint that should use HTTP
+    if (endpoint.startsWith('/patients/clinic/') || endpoint.startsWith('/clinics/')) {
+      return this.realRequest<T>('PATCH', endpoint, data);
+    }
+    
+    // For other endpoints, use mock for now
     return this.mockRequest<T>('PATCH', endpoint, data);
+  }
+
+  /**
+   * Real HTTP request handler
+   */
+  private async realRequest<T>(
+    method: string,
+    endpoint: string,
+    data?: any,
+    params?: Record<string, string | number>
+  ): Promise<ApiResponse<T>> {
+    try {
+      const url = this.buildURL(endpoint, params);
+      const options: RequestInit = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      };
+
+      if (data && (method === 'POST' || method === 'PATCH')) {
+        options.body = JSON.stringify(data);
+      }
+
+      console.log('🌐 Making API request to:', url);
+      console.log('📋 Request options:', {
+        method,
+        headers: options.headers,
+        body: options.body ? JSON.parse(options.body as string) : undefined,
+      });
+      const response = await fetch(url, options);
+      
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type') || '';
+      let result: any;
+      
+      // Clone response to read as text if needed for error handling
+      const responseClone = response.clone();
+      
+      if (contentType.includes('application/json')) {
+        try {
+          result = await response.json();
+        } catch (e) {
+          // If JSON parsing fails, try to get text for error message
+          const text = await responseClone.text();
+          console.error('❌ Failed to parse JSON response:', {
+            status: response.status,
+            contentType,
+            textPreview: text.substring(0, 200),
+          });
+          
+          if (!response.ok) {
+            return {
+              success: false,
+              error: {
+                code: 'HTTP_ERROR',
+                message: `Server returned ${response.status} ${response.statusText}. Response is not valid JSON.`,
+                statusCode: response.status,
+              },
+            };
+          }
+          
+          return {
+            success: false,
+            error: {
+              code: 'PARSE_ERROR',
+              message: 'Failed to parse server response as JSON',
+              statusCode: response.status,
+            },
+          };
+        }
+      } else {
+        // Not JSON content type - read as text
+        const text = await response.text();
+        console.error('❌ API returned non-JSON response:', {
+          status: response.status,
+          contentType,
+          textPreview: text.substring(0, 500),
+        });
+        
+        if (!response.ok) {
+          return {
+            success: false,
+            error: {
+              code: 'HTTP_ERROR',
+              message: `Server returned ${response.status} ${response.statusText}. Expected JSON but got ${contentType || 'unknown'}. This usually means the endpoint doesn't exist.`,
+              statusCode: response.status,
+            },
+          };
+        }
+        
+        // Try to parse as JSON anyway (might be JSON without proper content-type)
+        try {
+          result = JSON.parse(text);
+        } catch (e) {
+          return {
+            success: false,
+            error: {
+              code: 'INVALID_RESPONSE',
+              message: `Server response is not valid JSON. Status: ${response.status}, Content-Type: ${contentType || 'unknown'}`,
+              statusCode: response.status,
+            },
+          };
+        }
+      }
+      
+      console.log('📥 Raw API Response:', {
+        status: response.status,
+        ok: response.ok,
+        result: result,
+        resultType: typeof result,
+        isArray: Array.isArray(result),
+        resultKeys: result && typeof result === 'object' && !Array.isArray(result) ? Object.keys(result) : 'N/A',
+      });
+
+      if (!response.ok) {
+        console.error('❌ API Error Response:', result);
+        return {
+          success: false,
+          error: {
+            code: result.error?.code || 'HTTP_ERROR',
+            message: result.error?.message || result.message || `HTTP ${response.status}`,
+            statusCode: response.status,
+          },
+        };
+      }
+
+      // Handle different response structures
+      let apiResponse: ApiResponse<T>;
+      
+      // Case 1: API returns { success: true, data: [...] }
+      if (result.success !== undefined && result.data !== undefined) {
+        apiResponse = {
+          success: result.success,
+          data: result.data,
+          message: result.message,
+          error: result.error,
+        };
+      }
+      // Case 2: API returns array directly [ {...}, {...} ]
+      else if (Array.isArray(result)) {
+        console.log('📋 API returned array directly, wrapping in response object');
+        apiResponse = {
+          success: true,
+          data: result as T,
+        };
+      }
+      // Case 3: API returns object with data field but no success
+      else if (result.data !== undefined) {
+        apiResponse = {
+          success: true,
+          data: result.data,
+          message: result.message,
+          error: result.error,
+        };
+      }
+      // Case 4: API returns object directly - check for common array fields
+      else {
+        console.log('📦 API returned object directly, checking for array fields...');
+        // Check if object has common array field names
+        const possibleArrayFields = ['data', 'patients', 'items', 'results', 'content'];
+        let foundArray: any = null;
+        
+        for (const field of possibleArrayFields) {
+          if (result[field] && Array.isArray(result[field])) {
+            foundArray = result[field];
+            console.log(`✅ Found array in field '${field}' with ${foundArray.length} items`);
+            break;
+          }
+        }
+        
+        if (foundArray) {
+          apiResponse = {
+            success: true,
+            data: foundArray as T,
+          };
+        } else {
+          // If no array found, use the object as-is (might be a single item or different structure)
+          console.log('⚠️ No array field found in object, using object as data');
+          apiResponse = {
+            success: true,
+            data: result as T,
+          };
+        }
+      }
+
+      console.log('✅ Normalized API Response:', apiResponse);
+      return apiResponse;
+    } catch (error: any) {
+      console.error('API request failed:', error);
+      return {
+        success: false,
+        error: {
+          code: 'NETWORK_ERROR',
+          message: error.message || 'Network request failed',
+          statusCode: 0,
+        },
+      };
+    }
   }
 
   /**
@@ -77,7 +309,18 @@ class ApiClient {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Route to appropriate mock handler
-    if (endpoint.startsWith('/patients')) {
+    // Note: /patients/clinic/ and /clinics/ endpoints are handled by realRequest
+    if (endpoint.startsWith('/patients/clinic/') || endpoint.startsWith('/clinics/')) {
+      // This should not happen as it's handled in get/post/patch methods
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_ROUTE',
+          message: 'This endpoint should use real HTTP requests',
+          statusCode: 500,
+        },
+      };
+    } else if (endpoint.startsWith('/patients')) {
       return this.handlePatientRequest<T>(method, endpoint, data, params);
     } else if (endpoint.startsWith('/visits')) {
       return this.handleVisitRequest<T>(method, endpoint, data, params);
@@ -198,7 +441,7 @@ class ApiClient {
     method: string,
     endpoint: string,
     data?: any,
-    params?: Record<string, string | number>
+    _params?: Record<string, string | number>
   ): ApiResponse<T> {
     const STORAGE_KEY = 'clinic_visits';
     const visits: any[] = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -219,20 +462,7 @@ class ApiClient {
     }
 
     // Check /visits/patient/ BEFORE /visits/:visitId to avoid route conflicts
-    if (endpoint.startsWith('/visits/patient/') && method === 'GET') {
-      const patientId = endpoint.split('/')[3];
-      const patientVisits = visits
-        .filter((v: any) => v.patientId === patientId)
-        .map((v: any) => ({
-          id: v.id,
-          date: v.date,
-          status: v.status,
-          hasPrescription: !!v.prescription,
-        }))
-        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, params?.limit ? Number(params.limit) : 20);
-      return { success: true, data: patientVisits as T };
-    }
+    // NOTE: patient visit history is now fetched from real API: GET /api/visits/patient/:patientId
 
     if (endpoint.startsWith('/visits/') && method === 'GET') {
       const visitId = endpoint.split('/')[2];
