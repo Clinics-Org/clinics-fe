@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Input, Button, Modal, DateFilter } from '../components/ui';
+import { Input, Button, Modal, DatePicker, Select, SelectItem } from '../components/ui';
 import { Card, CardContent } from '../components/ui/Card';
 import { patientService } from '../services/patientService';
 import { visitService } from '../services/visitService';
@@ -103,12 +103,17 @@ export default function VisitsScreen() {
         ? (selectedVisitStatus as 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED')
         : undefined;
       
+      // Handle "all" value for doctor filter
+      const doctorId = selectedDoctorFilter && selectedDoctorFilter !== 'all' 
+        ? selectedDoctorFilter 
+        : undefined;
+      
       const result = await visitService.getAllVisits(
         1, 
         50, 
         selectedDate,
         visitStatus,
-        selectedDoctorFilter || undefined
+        doctorId
       );
       
       console.log('📊 Visits loaded:', result.visits.length);
@@ -309,70 +314,57 @@ export default function VisitsScreen() {
         </div>
 
         <div className="mb-6 flex flex-col sm:flex-row gap-4">
-          <Card className="border-teal-200 flex-1">
-            <CardContent className="pt-6">
-              <Input
-                type="text"
-                placeholder="Search visits by patient name, mobile, or reason..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
-            </CardContent>
-          </Card>
-          <Card className="border-teal-200 sm:w-48">
-            <CardContent className="pt-6">
-              <DateFilter
-                // label="Filter by Date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full"
-              />
-            </CardContent>
-          </Card>
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Search visits by patient name, mobile, or reason..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div className="sm:w-48">
+            <DatePicker
+              value={selectedDate}
+              onChange={(value) => setSelectedDate(value)}
+              placeholder="Select date"
+              className="w-full"
+            />
+          </div>
           
           {/* Doctor Filter */}
           {doctors.length > 0 && (
-            <Card className="border-teal-200 sm:w-56">
-              <CardContent className="pt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter by Doctor
-                </label>
-                <select
-                  className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
-                  value={selectedDoctorFilter}
-                  onChange={(e) => setSelectedDoctorFilter(e.target.value)}
-                >
-                  <option value="">All Doctors</option>
-                  {doctors.map((doc) => (
-                    <option key={doc.id} value={doc.id}>
-                      {doc.name}
-                    </option>
-                  ))}
-                </select>
-              </CardContent>
-            </Card>
+            <div className="sm:w-56">
+              <Select
+                value={selectedDoctorFilter || undefined}
+                onValueChange={(value) => setSelectedDoctorFilter(value || '')}
+                placeholder="All Doctors"
+                className="w-full"
+              >
+                <SelectItem value="all">All Doctors</SelectItem>
+                {doctors.map((doc) => (
+                  <SelectItem key={doc.id} value={doc.id}>
+                    {doc.name}
+                  </SelectItem>
+                ))}
+              </Select>
+            </div>
           )}
           
           {/* Visit Status Filter */}
-          <Card className="border-teal-200 sm:w-56">
-            <CardContent className="pt-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Status
-              </label>
-              <select
-                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
-                value={selectedVisitStatus}
-                onChange={(e) => setSelectedVisitStatus(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="WAITING">Waiting</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
-            </CardContent>
-          </Card>
+          <div className="sm:w-56">
+            <Select
+              value={selectedVisitStatus}
+              onValueChange={(value) => setSelectedVisitStatus(value)}
+              placeholder="All Statuses"
+              className="w-full"
+            >
+              <SelectItem value="WAITING">Waiting</SelectItem>
+              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+              <SelectItem value="COMPLETED">Completed</SelectItem>
+              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+            </Select>
+          </div>
         </div>
 
         {filteredVisits.length > 0 ? (
@@ -591,21 +583,21 @@ export default function VisitsScreen() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select Doctor *
                   </label>
-                  <select
-                    className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={selectedDoctorId}
-                    onChange={(e) => {
-                      setSelectedDoctorId(e.target.value);
+                  <Select
+                    value={selectedDoctorId || undefined}
+                    onValueChange={(value) => {
+                      setSelectedDoctorId(value || '');
                       setDoctorError('');
                     }}
+                    placeholder="Select doctor"
+                    className="w-full"
                   >
-                    <option value="">Select doctor</option>
                     {doctors.map((doc) => (
-                      <option key={doc.id} value={doc.id}>
+                      <SelectItem key={doc.id} value={doc.id}>
                         {doc.name}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </select>
+                  </Select>
                   {doctorError && (
                     <p className="mt-1 text-sm text-red-600">{doctorError}</p>
                   )}

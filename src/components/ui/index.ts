@@ -49,3 +49,9 @@ export type { NotesInputProps } from './NotesInput';
 
 export { Stepper } from './Stepper';
 export type { StepperProps, StepperStep } from './Stepper';
+
+export { Select, SelectItem } from './Select';
+export type { SelectProps } from './Select';
+
+export { DatePicker } from './DatePicker';
+export type { DatePickerProps } from './DatePicker';

@@ -181,17 +181,15 @@ export default function AllPatientsScreen() {
           </Button>
         </div>
 
-        <Card className="border-teal-200 mb-6">
-          <CardContent className="pt-6">
-            <Input
-              type="text"
-              placeholder="Search patients by name or mobile..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
-          </CardContent>
-        </Card>
+        <div className="mb-6">
+          <Input
+            type="text"
+            placeholder="Search patients by name or mobile..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
+          />
+        </div>
 
         {/* Debug info - remove in production */}
         {import.meta.env.DEV && (
