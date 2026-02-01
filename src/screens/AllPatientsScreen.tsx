@@ -87,8 +87,6 @@ export default function AllPatientsScreen() {
     }
     if (!newPatient.mobile.trim()) {
       newErrors.mobile = 'Mobile is required';
-    } else if (!/^\d{10}$/.test(newPatient.mobile)) {
-      newErrors.mobile = 'Mobile must be 10 digits';
     }
     if (!newPatient.gender) {
       newErrors.gender = 'Gender is required';
@@ -130,24 +128,7 @@ export default function AllPatientsScreen() {
     }
   };
 
-  const maskMobile = (mobile: string | undefined): string => {
-    if (!mobile || typeof mobile !== 'string') return 'N/A';
-    if (mobile.length <= 4) return mobile;
-    return '****' + mobile.slice(-4);
-  };
 
-  const formatDate = (dateString: string | undefined): string => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
-    } catch (error) {
-      return 'Invalid Date';
-    }
-  };
 
   if (loading) {
     return (
@@ -167,27 +148,35 @@ export default function AllPatientsScreen() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-teal-900">All Patients</h1>
-            <p className="text-gray-600 mt-1">
-              {filteredPatients.length} {filteredPatients.length === 1 ? 'patient' : 'patients'}
-              {searchQuery && ` found`}
-            </p>
+      <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">
+        {/* Header - Compact on Mobile */}
+        <div className="mb-4 md:mb-6">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl md:text-3xl font-bold text-teal-900">All Patients</h1>
+              <p className="text-xs md:text-base text-gray-600 mt-1">
+                {filteredPatients.length} {filteredPatients.length === 1 ? 'patient' : 'patients'}
+                {searchQuery && ` found`}
+              </p>
+            </div>
+            <Button 
+              onClick={handleAddNewPatient} 
+              className="flex-shrink-0 text-sm md:text-base px-3 md:px-4"
+              size="sm"
+            >
+              + Add
+            </Button>
           </div>
-          <Button onClick={handleAddNewPatient} className="w-full sm:w-auto">
-            + Add New Patient
-          </Button>
         </div>
 
-        <div className="mb-6">
+        {/* Search - Compact on Mobile */}
+        <div className="mb-4 md:mb-6">
           <Input
             type="text"
-            placeholder="Search patients by name or mobile..."
+            placeholder="Search by name or mobile..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
+            className="w-full text-sm md:text-base"
           />
         </div>
 
@@ -199,36 +188,53 @@ export default function AllPatientsScreen() {
         )}
 
         {filteredPatients.length > 0 ? (
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {filteredPatients.map((patient) => (
               <Card
                 key={patient.id}
-                className="border-teal-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
+                className="border-teal-200 hover:border-teal-400 hover:shadow-lg transition-all cursor-pointer"
                 onClick={() => navigate(`/patient/${patient.id}`)}
               > 
-                <CardContent className="p-4 md:p-6">
+                <CardContent className="p-3 md:p-5">
                   <div className="flex items-center gap-3 md:gap-4">
+                    {/* Avatar */}
                     <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base md:text-lg flex-shrink-0">
                       {patient.name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 truncate">
-                        {patient.name}
-                      </h3>
-                      <div className="mt-1 text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
-                        {patient.mobile && (
-                          <span className="whitespace-nowrap">📱 {maskMobile(patient.mobile)}</span>
+                    
+                    {/* Column-based layout for desktop */}
+                    <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-[minmax(150px,1fr)_minmax(120px,auto)_minmax(80px,auto)_minmax(100px,auto)] gap-2 md:gap-4 items-center">
+                      {/* Name Column */}
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-900 truncate">
+                          {patient.name}
+                        </h3>
+                      </div>
+                      
+                      {/* Mobile Column */}
+                      <div className="min-w-0">
+                        {patient.mobile ? (
+                          <span className="text-sm text-gray-600 whitespace-nowrap">📱 {patient.mobile || 'N/A'}</span>
+                        ) : (
+                          <span className="text-sm text-gray-400">—</span>
                         )}
-                        <span className="whitespace-nowrap">
-                          👤 Age: {patient.age !== undefined && patient.age !== null ? patient.age : 'N/A'}
+                      </div>
+                      
+                      {/* Age Column */}
+                      <div className="min-w-0">
+                        <span className="text-sm text-gray-600 whitespace-nowrap">
+                          👤 {patient.age !== undefined && patient.age !== null ? patient.age : 'N/A'}
                         </span>
-                        {patient.gender && (
-                          <span className="whitespace-nowrap">
+                      </div>
+                      
+                      {/* Gender Column */}
+                      <div className="min-w-0">
+                        {patient.gender ? (
+                          <span className="text-sm text-gray-600 whitespace-nowrap">
                             {patient.gender === 'M' ? '♂' : '♀'} {patient.gender === 'M' ? 'Male' : 'Female'}
                           </span>
-                        )}
-                        {patient.createdAt && (
-                          <span className="whitespace-nowrap">📅 Joined: {formatDate(patient.createdAt)}</span>
+                        ) : (
+                          <span className="text-sm text-gray-400">—</span>
                         )}
                       </div>
                     </div>
@@ -303,10 +309,9 @@ export default function AllPatientsScreen() {
             label="Mobile *"
             type="tel"
             value={newPatient.mobile}
-            onChange={(e) => setNewPatient({ ...newPatient, mobile: e.target.value })}
+            onChange={(e) => setNewPatient({ ...newPatient, mobile: e.target.value.replace(/\D/g, '') })}
             error={errors.mobile}
-            placeholder="Enter 10-digit mobile number"
-            maxLength={10}
+            placeholder="Enter mobile number"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 handleSavePatient();

@@ -25,6 +25,7 @@ export const visitService = {
       created_at: apiVisit.created_at,
       updated_at: apiVisit.updated_at,
       prescription_id: apiVisit.prescription_id || null,
+      token_number: apiVisit.token_number || apiVisit.tokenNumber || undefined,
     };
   },
 
@@ -304,6 +305,7 @@ export const visitService = {
         visit_date: apiVisit.visit_date,
         created_at: apiVisit.created_at,
         updated_at: apiVisit.updated_at,
+        token_number: apiVisit.token_number || apiVisit.tokenNumber || undefined,
       }));
 
       return {

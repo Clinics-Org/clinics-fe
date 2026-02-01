@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Button, Input, Modal, NotesInput } from '../components/ui';
+import { Button, Input, Modal, NotesInput, MedicationInput } from '../components/ui';
 import {
   Table,
   TableBody,
@@ -33,40 +33,81 @@ export default function PrescriptionScreen() {
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
   const [visit, setVisit] = useState<Visit | null>(null);
   const [existingPrescriptionNotes, setExistingPrescriptionNotes] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadVisit = async () => {
-      if (!visitId) {
-        navigate('/visits');
-        return;
-      }
+      try {
+        setLoading(true);
+        setError(null);
 
-      const visitData = await visitService.getById(visitId);
-      if (!visitData) {
-        navigate('/visits');
-        return;
-      }
+        if (!visitId) {
+          console.log('⚠️ No visitId provided');
+          setLoading(false);
+          navigate('/visits');
+          return;
+        }
 
-      setVisit(visitData);
-      
-      // If prescription_id exists, fetch the prescription data
-      if (visitData.prescription_id) {
-        const prescriptionData = await prescriptionService.getById(visitData.prescription_id);
-        if (prescriptionData) {
-          setMedicines(prescriptionData.medicines.length > 0 ? prescriptionData.medicines : [
-            prescriptionService.createMedicine({ name: '', dosage: '', duration: '', notes: '' })
-          ]);
-          setFollowUp(prescriptionData.followUp || null);
-          setExistingPrescriptionNotes(prescriptionData.notes);
-          if (prescriptionData.followUp) {
-            setFollowUpValue(prescriptionData.followUp.value.toString());
-            setFollowUpUnit(prescriptionData.followUp.unit);
-            setFollowUpEnabled(true);
-          } else {
-            setFollowUpEnabled(false);
+        console.log('🔄 Loading visit:', visitId);
+        const visitData = await visitService.getById(visitId);
+        
+        if (!visitData) {
+          console.error('❌ Visit not found:', visitId);
+          setError('Visit not found');
+          setLoading(false);
+          toast.error('Visit not found');
+          // Don't navigate immediately, let user see the error
+          return;
+        }
+
+        console.log('✅ Visit loaded:', visitData);
+        setVisit(visitData);
+        
+        // If prescription_id exists, fetch the prescription data
+        if (visitData.prescription_id) {
+          console.log('🔄 Loading prescription:', visitData.prescription_id);
+          try {
+            const prescriptionData = await prescriptionService.getById(visitData.prescription_id);
+            if (prescriptionData) {
+              console.log('✅ Prescription loaded:', prescriptionData);
+              setMedicines(prescriptionData.medicines.length > 0 ? prescriptionData.medicines : [
+                prescriptionService.createMedicine({ name: '', dosage: '', duration: '', notes: '' })
+              ]);
+              setFollowUp(prescriptionData.followUp || null);
+              setExistingPrescriptionNotes(prescriptionData.notes);
+              if (prescriptionData.followUp) {
+                setFollowUpValue(prescriptionData.followUp.value.toString());
+                setFollowUpUnit(prescriptionData.followUp.unit);
+                setFollowUpEnabled(true);
+              } else {
+                setFollowUpEnabled(false);
+              }
+            } else {
+              console.log('⚠️ Prescription not found, starting with empty medicine');
+              // If fetch failed, start with empty medicine row
+              const initialMedicine: Medicine = prescriptionService.createMedicine({
+                name: '',
+                dosage: '',
+                duration: '',
+                notes: '',
+              });
+              setMedicines([initialMedicine]);
+            }
+          } catch (prescriptionError: any) {
+            console.error('❌ Error loading prescription:', prescriptionError);
+            // Continue with empty medicine even if prescription fetch fails
+            const initialMedicine: Medicine = prescriptionService.createMedicine({
+              name: '',
+              dosage: '',
+              duration: '',
+              notes: '',
+            });
+            setMedicines([initialMedicine]);
           }
         } else {
-          // If fetch failed, start with empty medicine row
+          console.log('ℹ️ No prescription_id, starting with empty medicine');
+          // No prescription exists yet, start with empty medicine row
           const initialMedicine: Medicine = prescriptionService.createMedicine({
             name: '',
             dosage: '',
@@ -75,15 +116,13 @@ export default function PrescriptionScreen() {
           });
           setMedicines([initialMedicine]);
         }
-      } else {
-        // No prescription exists yet, start with empty medicine row
-        const initialMedicine: Medicine = prescriptionService.createMedicine({
-          name: '',
-          dosage: '',
-          duration: '',
-          notes: '',
-        });
-        setMedicines([initialMedicine]);
+      } catch (err: any) {
+        console.error('❌ Error loading visit:', err);
+        setError(err?.message || 'Failed to load visit');
+        toast.error('Failed to load visit data');
+      } finally {
+        console.log('🏁 Setting loading to false');
+        setLoading(false);
       }
     };
 
@@ -237,6 +276,46 @@ export default function PrescriptionScreen() {
 
   const prescriptionPreview = medicines.filter((med) => med.name.trim() !== '');
 
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-500 mb-2">Loading prescription...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state only if we have an error and no visit (and not loading)
+  if (error && !visit && !loading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">{error}</div>
+          <Button onClick={() => navigate('/visits')}>Go Back to Visits</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // If no visit after loading completes, show message
+  if (!visit && !loading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-500 mb-4">Visit not found</div>
+          <Button onClick={() => navigate('/visits')}>Go Back to Visits</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Safety check: if visit is still null after loading, return null to prevent blank screen
+  if (!visit) {
+    return null;
+  }
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden pb-32 md:pb-24">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
@@ -286,13 +365,13 @@ export default function PrescriptionScreen() {
                           )}
                         </div>
                       </div>
-                      <Input
+                      <MedicationInput
                         label="Medicine Name"
                         value={medicine.name}
-                        onChange={(e) =>
-                          handleUpdateMedicine(medicine.id, 'name', e.target.value)
+                        onChange={(value) =>
+                          handleUpdateMedicine(medicine.id, 'name', value)
                         }
-                        placeholder="Medicine name"
+                        placeholder="Search medication..."
                         className="w-full"
                       />
                       <div className="grid grid-cols-2 gap-3">
@@ -344,12 +423,12 @@ export default function PrescriptionScreen() {
                       {medicines.map((medicine, index) => (
                         <TableRow key={medicine.id} className="hover:bg-teal-50/50">
                           <TableCell className="min-w-[250px]">
-                            <Input
+                            <MedicationInput
                               value={medicine.name}
-                              onChange={(e) =>
-                                handleUpdateMedicine(medicine.id, 'name', e.target.value)
+                              onChange={(value) =>
+                                handleUpdateMedicine(medicine.id, 'name', value)
                               }
-                              placeholder="Medicine name"
+                              placeholder="Search medication..."
                               className="w-full"
                             />
                           </TableCell>

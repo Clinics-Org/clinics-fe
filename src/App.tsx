@@ -9,8 +9,8 @@ import VisitContextScreen from './screens/VisitContextScreen';
 import ConsultationScreen from './screens/ConsultationScreen';
 import PrescriptionScreen from './screens/PrescriptionScreen';
 import PrintPreviewScreen from './screens/PrintPreviewScreen';
-import StatsScreen from './screens/StatsScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import AppointmentsScreen from './screens/AppointmentsScreen';
 
 function App() {
   return (
@@ -21,11 +21,11 @@ function App() {
           <Route path="/patients" element={<AllPatientsScreen />} />
           <Route path="/patient/:patientId" element={<PatientDetailsScreen />} />
           <Route path="/visits" element={<VisitsScreen />} />
+          <Route path="/appointments" element={<AppointmentsScreen />} />
           <Route path="/visit/:visitId" element={<VisitContextScreen />} />
           <Route path="/consultation/:visitId" element={<ConsultationScreen />} />
           <Route path="/prescription/:visitId" element={<PrescriptionScreen />} />
           <Route path="/print-preview/:visitId" element={<PrintPreviewScreen />} />
-          <Route path="/stats" element={<StatsScreen />} />
           <Route path="/settings" element={<SettingsScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

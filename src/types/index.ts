@@ -44,6 +44,7 @@ export interface Visit {
   created_at?: string;
   updated_at?: string;
   prescription_id?: string | null; // ID of the prescription if it exists
+  token_number?: number;
 }
 
 export interface ClinicDoctor {
@@ -63,4 +64,18 @@ export interface Clinic {
   createdAt?: string;
   updatedAt?: string;
   doctors?: ClinicDoctor[];
+}
+
+export interface Appointment {
+  id: string;
+  name: string;
+  mobile_number: string;
+  gender: 'MALE' | 'FEMALE';
+  doctor?: ClinicDoctor;
+  clinic_id: string;
+  appointment_date_time: string;
+  appointment_status: 'WAITING' | 'CHECKED_IN' | 'NO_SHOW';
+  source: string; // e.g., "PHONE", "ONLINE"
+  created_at?: string;
+  updated_at?: string;
 }

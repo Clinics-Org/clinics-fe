@@ -55,3 +55,6 @@ export type { SelectProps } from './Select';
 
 export { DatePicker } from './DatePicker';
 export type { DatePickerProps } from './DatePicker';
+
+export { MedicationInput } from './MedicationInput';
+export type { MedicationInputProps } from './MedicationInput';

@@ -1,20 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Input, Button, Modal, DatePicker, Select, SelectItem } from '../components/ui';
 import { Card, CardContent } from '../components/ui/Card';
+import { appointmentService } from '../services/appointmentService';
 import { patientService } from '../services/patientService';
-import { visitService } from '../services/visitService';
 import { toast } from '../utils/toast';
-import type { Patient, Visit, ClinicDoctor } from '../types';
+import type { Appointment, ClinicDoctor, Patient } from '../types';
 import { clinicService } from '../services/clinicService';
 
-export default function VisitsScreen() {
-  const navigate = useNavigate();
+export default function AppointmentsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [visits, setVisits] = useState<Visit[]>([]);
-  const [filteredVisits, setFilteredVisits] = useState<Visit[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Date filter - default to today
   const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -25,10 +22,11 @@ export default function VisitsScreen() {
   // Doctor filter
   const [selectedDoctorFilter, setSelectedDoctorFilter] = useState<string>('');
   
-  // Visit status filter - default to WAITING
-  const [selectedVisitStatus, setSelectedVisitStatus] = useState<string>('WAITING');
+  // Doctors list
+  const [doctors, setDoctors] = useState<ClinicDoctor[]>([]);
   
   // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [step, setStep] = useState<'mobile' | 'patient-form'>('mobile');
   const [mobileNumber, setMobileNumber] = useState('');
   const [searching, setSearching] = useState(false);
@@ -36,19 +34,12 @@ export default function VisitsScreen() {
   const [newPatient, setNewPatient] = useState({
     name: '',
     mobile: '',
-    age: '',
     gender: '' as 'M' | 'F' | '',
   });
-  const [visitReason, setVisitReason] = useState('');
-  const [doctors, setDoctors] = useState<ClinicDoctor[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
   const [doctorError, setDoctorError] = useState<string>('');
+  const [appointmentDateTime, setAppointmentDateTime] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Load all visits when filters change
-  useEffect(() => {
-    loadVisits();
-  }, [selectedDate, selectedDoctorFilter, selectedVisitStatus]);
 
   // Load doctors once on mount
   useEffect(() => {
@@ -57,9 +48,6 @@ export default function VisitsScreen() {
         const clinic = await clinicService.getCurrentClinic();
         const clinicDoctors = clinic?.doctors || [];
         setDoctors(clinicDoctors);
-        if (clinicDoctors.length === 1) {
-          setSelectedDoctorId(clinicDoctors[0].id);
-        }
       } catch (error) {
         console.error('❌ Failed to load doctors from clinic:', error);
       }
@@ -68,72 +56,67 @@ export default function VisitsScreen() {
     loadDoctors();
   }, []);
 
-  // Filter visits based on search
+  // Load all appointments when filters change
+  useEffect(() => {
+    loadAppointments();
+  }, [selectedDate, selectedDoctorFilter]);
+
+  // Filter appointments based on search
   useEffect(() => {
     if (!searchQuery.trim()) {
-      setFilteredVisits(visits);
+      setFilteredAppointments(appointments);
       return;
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = visits.filter((visit) => {
-      const patient = visit.patient;
-      if (!patient) return false;
+    const filtered = appointments.filter((appointment) => {
+      const nameMatch = appointment.name?.toLowerCase().includes(query);
+      const mobileMatch = appointment.mobile_number?.includes(query);
       
-      const nameMatch = patient.name?.toLowerCase().includes(query);
-      const mobileMatch = patient.mobile?.includes(query);
-      const reasonMatch = visit.visit_reason?.toLowerCase().includes(query);
-      
-      return nameMatch || mobileMatch || reasonMatch;
+      return nameMatch || mobileMatch;
     });
 
-    setFilteredVisits(filtered);
-  }, [searchQuery, visits]);
+    setFilteredAppointments(filtered);
+  }, [searchQuery, appointments]);
 
-  const loadVisits = async () => {
+  const loadAppointments = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Loading visits with filters:', {
+      console.log('🔄 Loading appointments with filters:', {
         date: selectedDate,
         doctorId: selectedDoctorFilter,
-        visitStatus: selectedVisitStatus,
       });
-      
-      const visitStatus = selectedVisitStatus 
-        ? (selectedVisitStatus as 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED')
-        : undefined;
       
       // Handle "all" value for doctor filter
       const doctorId = selectedDoctorFilter && selectedDoctorFilter !== 'all' 
         ? selectedDoctorFilter 
         : undefined;
       
-      const result = await visitService.getAllVisits(
+      const result = await appointmentService.getAllAppointments(
         1, 
         50, 
         selectedDate,
-        visitStatus,
         doctorId
       );
       
-      console.log('📊 Visits loaded:', result.visits.length);
-      setVisits(result.visits);
-      setFilteredVisits(result.visits);
+      console.log('📊 Appointments loaded:', result.appointments.length);
+      setAppointments(result.appointments);
+      setFilteredAppointments(result.appointments);
     } catch (error) {
-      console.error('❌ Failed to load visits:', error);
-      toast.error('Failed to load visits');
+      console.error('❌ Failed to load appointments:', error);
+      toast.error('Failed to load appointments');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateVisit = () => {
+  const handleCreateAppointment = () => {
     setIsModalOpen(true);
     setStep('mobile');
     setMobileNumber('');
     setFoundPatient(null);
-    setNewPatient({ name: '', mobile: '', age: '', gender: '' });
-    setVisitReason('');
+    setNewPatient({ name: '', mobile: '', gender: '' });
+    setAppointmentDateTime('');
     setErrors({});
     setDoctorError('');
     // Auto-select doctor if only one is available
@@ -158,25 +141,24 @@ export default function VisitsScreen() {
       const searchResults = await patientService.search(mobileNumber);
       
       if (searchResults.length > 0) {
-        // Patient found - use the first match
+        // Patient found - use the first match and prefill form data
         const patient = searchResults[0];
         console.log('✅ Patient found:', patient);
         setFoundPatient(patient);
+        // Prefill all patient data from search result
         setNewPatient({
-          name: patient.name,
-          mobile: patient.mobile,
-          age: patient.age?.toString() || '',
+          name: patient.name || '',
+          mobile: patient.mobile || mobileNumber,
           gender: patient.gender || '',
         });
         setStep('patient-form');
       } else {
-        // Patient not found - show form to create
-        console.log('❌ Patient not found, showing create form');
+        // Patient not found - show form to enter details manually
+        console.log('❌ Patient not found, showing form to enter details');
         setFoundPatient(null);
         setNewPatient({
           name: '',
           mobile: mobileNumber,
-          age: '',
           gender: '',
         });
         setStep('patient-form');
@@ -200,8 +182,8 @@ export default function VisitsScreen() {
     if (!newPatient.gender) {
       newErrors.gender = 'Gender is required';
     }
-    if (newPatient.age && (isNaN(Number(newPatient.age)) || Number(newPatient.age) < 0)) {
-      newErrors.age = 'Age must be a valid number';
+    if (!appointmentDateTime) {
+      newErrors.appointmentDateTime = 'Appointment date and time is required';
     }
     if (doctors.length > 1 && !selectedDoctorId) {
       setDoctorError('Please select a doctor');
@@ -214,83 +196,113 @@ export default function VisitsScreen() {
     return hasFieldErrors && !hasDoctorError;
   };
 
-  const handleCreateVisitSubmit = async () => {
+  const handleCreateAppointmentSubmit = async () => {
     if (step === 'mobile') {
       await handleSearchPatient();
       return;
     }
 
-    // Step: patient-form - validate and create visit
+    // Step: patient-form - validate and create appointment
     if (!validatePatientForm()) {
       return;
     }
 
     try {
-      let patientId: string;
-
-      if (foundPatient) {
-        // Use existing patient
-        patientId = foundPatient.id;
-        console.log('✅ Using existing patient:', patientId);
-      } else {
-        // Create new patient
-        console.log('🔄 Creating new patient...');
-        const patient = await patientService.create({
-          name: newPatient.name.trim(),
-          mobile: newPatient.mobile.trim(),
-          age: newPatient.age ? Number(newPatient.age) : undefined,
-          gender: newPatient.gender as 'M' | 'F',
-        });
-        patientId = patient.id;
-        console.log('✅ Patient created:', patientId);
+      // Map gender to API format
+      const gender = newPatient.gender === 'M' ? 'MALE' : 'FEMALE';
+      
+      // Get doctor ID (use selected or first doctor if only one)
+      const doctorId = selectedDoctorId || (doctors.length === 1 ? doctors[0].id : '');
+      
+      if (!doctorId) {
+        toast.error('Please select a doctor');
+        return;
       }
 
-      // Create visit
-      console.log('🔄 Creating visit...');
-      const visit = await visitService.create({
-        patientId,
-        visitReason: visitReason.trim() || 'General consultation',
-        status: 'waiting',
-        doctorId: selectedDoctorId || undefined,
+      // Convert datetime-local format to ISO format
+      const isoDateTime = appointmentDateTime ? new Date(appointmentDateTime).toISOString() : '';
+      
+      if (!isoDateTime) {
+        toast.error('Invalid appointment date/time');
+        return;
+      }
+
+      // Create appointment directly (no patient creation needed)
+      // The appointment API accepts patient details (name, mobile_number, gender) directly
+      console.log('🔄 Creating appointment...');
+      const appointment = await appointmentService.create({
+        name: newPatient.name.trim(),
+        mobile_number: newPatient.mobile.trim(),
+        gender: gender,
+        doctor_id: doctorId,
+        appointment_date_time: isoDateTime,
+        appointment_status: 'WAITING',
+        source: 'PHONE',
       });
 
-      console.log('✅ Visit created:', visit.id);
-      toast.success('Visit created successfully!');
+      console.log('✅ Appointment created:', appointment.id);
+      toast.success('Appointment created successfully!');
       setIsModalOpen(false);
       
-      // Reload visits and navigate
-      await loadVisits();
-      navigate(`/visit/${visit.id}`);
+      // Reload appointments
+      await loadAppointments();
     } catch (error: any) {
-      console.error('❌ Failed to create visit:', error);
-      toast.error(error?.message || 'Failed to create visit');
+      console.error('❌ Failed to create appointment:', error);
+      toast.error(error?.message || 'Failed to create appointment');
     }
   };
 
-  const handleVisitClick = (visit: Visit) => {
-    navigate(`/visit/${visit.id}`);
+  const handleMarkCheckIn = async (appointmentId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    try {
+      const updated = await appointmentService.updateStatus(appointmentId, 'CHECKED_IN');
+      if (updated) {
+        toast.success('Appointment marked as checked in');
+        await loadAppointments(); // Reload to refresh the list
+      } else {
+        toast.error('Failed to mark check in');
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to mark check in:', error);
+      toast.error(error?.message || 'Failed to mark check in');
+    }
+  };
+
+  const formatDateTime = (dateTime: string) => {
+    try {
+      const date = new Date(dateTime);
+      return date.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateTime;
+    }
   };
 
   const getStatusColor = (status: string) => {
     const s = status.toLowerCase();
-    if (s === 'waiting' || s === 'waiting') return 'bg-yellow-100 text-yellow-800';
-    if (s === 'in_progress' || s === 'in_progress') return 'bg-blue-100 text-blue-800';
-    if (s === 'completed' || s === 'completed') return 'bg-green-100 text-green-800';
+    if (s === 'waiting') return 'bg-yellow-100 text-yellow-800';
+    if (s === 'checked_in') return 'bg-teal-100 text-teal-800';
+    if (s === 'no_show') return 'bg-red-100 text-red-800';
     return 'bg-gray-100 text-gray-800';
   };
 
   const getStatusLabel = (status: string) => {
     const s = status.toLowerCase();
-    if (s === 'waiting' || s === 'waiting') return 'Waiting';
-    if (s === 'in_progress' || s === 'in_progress') return 'In Progress';
-    if (s === 'completed' || s === 'completed') return 'Completed';
+    if (s === 'waiting') return 'Waiting';
+    if (s === 'checked_in') return 'Checked In';
+    if (s === 'no_show') return 'No Show';
     return status;
   };
 
   if (loading) {
     return (
       <div className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading visits...</div>
+        <div className="text-gray-500">Loading appointments...</div>
       </div>
     );
   }
@@ -302,14 +314,14 @@ export default function VisitsScreen() {
         <div className="mb-4 md:mb-6">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-3xl font-bold text-teal-900">Visits</h1>
+              <h1 className="text-xl md:text-3xl font-bold text-teal-900">Appointments</h1>
               <p className="text-xs md:text-base text-gray-600 mt-1">
-                {filteredVisits.length} {filteredVisits.length === 1 ? 'visit' : 'visits'}
+                {filteredAppointments.length} {filteredAppointments.length === 1 ? 'appointment' : 'appointments'}
                 {searchQuery && ` found`}
               </p>
             </div>
             <Button 
-              onClick={handleCreateVisit} 
+              onClick={handleCreateAppointment} 
               className="flex-shrink-0 text-sm md:text-base px-3 md:px-4"
               size="sm"
             >
@@ -323,7 +335,7 @@ export default function VisitsScreen() {
           <div className="flex-1">
             <Input
               type="text"
-              placeholder="Search by name, mobile, or reason..."
+              placeholder="Search by name or mobile..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full text-sm md:text-base"
@@ -356,76 +368,125 @@ export default function VisitsScreen() {
               </Select>
             </div>
           )}
-          
-          {/* Visit Status Filter */}
-          <div className="sm:w-48 md:w-56">
-            <Select
-              value={selectedVisitStatus}
-              onValueChange={(value) => setSelectedVisitStatus(value)}
-              placeholder="All Statuses"
-              className="w-full text-sm"
-            >
-              <SelectItem value="WAITING">Waiting</SelectItem>
-              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-              <SelectItem value="COMPLETED">Completed</SelectItem>
-              <SelectItem value="CANCELLED">Cancelled</SelectItem>
-            </Select>
-          </div>
         </div>
 
-        {filteredVisits.length > 0 ? (
+        {filteredAppointments.length > 0 ? (
           <div className="grid gap-3">
-            {filteredVisits.map((visit) => (
+            {filteredAppointments.map((appointment) => (
               <Card
-                key={visit.id}
-                className="border-teal-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
-                onClick={() => handleVisitClick(visit)}
+                key={appointment.id}
+                className="border-teal-200 hover:border-teal-400 hover:shadow-lg transition-all"
               >
                 <CardContent className="p-3 md:p-5">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-                      {/* Avatar */}
-                      <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base md:text-lg flex-shrink-0">
-                        {visit.patient?.name?.charAt(0).toUpperCase() || '?'}
-                      </div>
-                      
-                      {/* Column-based layout for desktop */}
-                      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-[minmax(150px,1fr)_minmax(120px,auto)_minmax(140px,auto)] gap-2 md:gap-4 items-center">
-                        {/* Name Column */}
-                        <div className="min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate">
-                            {visit.patient?.name || 'Unknown Patient'}
-                          </h3>
-                        </div>
-                        
-                        {/* Mobile Column */}
-                        <div className="min-w-0">
-                          {visit.patient?.mobile ? (
-                            <span className="text-sm text-gray-600 whitespace-nowrap">📱 {visit.patient.mobile}</span>
-                          ) : (
-                            <span className="text-sm text-gray-400">—</span>
-                          )}
-                        </div>
-                        
-                        {/* Token Column */}
-                        <div className="min-w-0">
-                          {visit?.token_number ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-teal-100 text-teal-800 font-semibold text-sm whitespace-nowrap">
-                              <span>🎫</span>
-                              <span>Token: {visit.token_number}</span>
-                            </span>
-                          ) : (
-                            <span className="text-sm text-gray-400">—</span>
-                          )}
-                        </div>
-                      </div>
+                  <div className="flex items-center md:items-start gap-3 md:gap-4">
+                    {/* Avatar */}
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base md:text-lg flex-shrink-0">
+                      {appointment.name?.charAt(0).toUpperCase() || '?'}
                     </div>
                     
-                    {/* Status Badge */}
-                    <div className="flex-shrink-0">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(visit.visit_status || visit.status)}`}>
-                        {getStatusLabel(visit.visit_status || visit.status)}
-                      </span>
+                    {/* Main Content */}
+                    <div className="flex-1 min-w-0">
+                      {/* Mobile View - Stacked */}
+                      <div className="md:hidden space-y-2">
+                        {/* Name and Status Row */}
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="text-base font-semibold text-gray-900 truncate flex-1">
+                            {appointment.name || 'Unknown'}
+                          </h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${getStatusColor(appointment.appointment_status)}`}>
+                            {getStatusLabel(appointment.appointment_status)}
+                          </span>
+                        </div>
+                        
+                        {/* Mobile Number */}
+                        {appointment.mobile_number && (
+                          <div className="text-sm text-gray-600">
+                            📱 {appointment.mobile_number}
+                          </div>
+                        )}
+                        
+                        {/* Doctor */}
+                        {appointment.doctor && (
+                          <div className="text-sm text-gray-600">
+                            👨‍⚕️ {appointment.doctor.name}
+                          </div>
+                        )}
+                        
+                        {/* Appointment Time */}
+                        {appointment.appointment_date_time && (
+                          <div className="text-sm text-gray-600">
+                            🕐 {formatDateTime(appointment.appointment_date_time)}
+                          </div>
+                        )}
+                        
+                        {/* Check In Button - Mobile */}
+                        {appointment.appointment_status === 'WAITING' && (
+                          <div className="pt-1">
+                            <Button
+                              size="sm"
+                              onClick={(e) => handleMarkCheckIn(appointment.id, e)}
+                              className="w-full"
+                            >
+                              Mark Check In
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Desktop View - Column-based layout */}
+                      <div className="hidden md:flex items-center gap-4 w-full">
+                        <div className="flex-1 min-w-0 grid grid-cols-[minmax(150px,1fr)_minmax(120px,auto)_minmax(180px,auto)_minmax(200px,auto)] gap-4 items-center">
+                          {/* Name Column */}
+                          <div className="min-w-0">
+                            <h3 className="text-lg font-semibold text-gray-900 truncate">
+                              {appointment.name || 'Unknown'}
+                            </h3>
+                          </div>
+                          
+                          {/* Mobile Column */}
+                          <div className="min-w-0">
+                            {appointment.mobile_number ? (
+                              <span className="text-sm text-gray-600 whitespace-nowrap">📱 {appointment.mobile_number}</span>
+                            ) : (
+                              <span className="text-sm text-gray-400">—</span>
+                            )}
+                          </div>
+                          
+                          {/* Doctor Column */}
+                          <div className="min-w-0">
+                            {appointment.doctor ? (
+                              <span className="text-sm text-gray-600 whitespace-nowrap">👨‍⚕️ {appointment.doctor.name}</span>
+                            ) : (
+                              <span className="text-sm text-gray-400">—</span>
+                            )}
+                          </div>
+                          
+                          {/* Appointment Time Column */}
+                          <div className="min-w-0">
+                            {appointment.appointment_date_time ? (
+                              <span className="text-sm text-gray-600 whitespace-nowrap">🕐 {formatDateTime(appointment.appointment_date_time)}</span>
+                            ) : (
+                              <span className="text-sm text-gray-400">—</span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Status Badge and Check In Button - Desktop */}
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(appointment.appointment_status)}`}>
+                            {getStatusLabel(appointment.appointment_status)}
+                          </span>
+                          {appointment.appointment_status === 'WAITING' && (
+                            <Button
+                              size="sm"
+                              onClick={(e) => handleMarkCheckIn(appointment.id, e)}
+                              className="whitespace-nowrap"
+                            >
+                              Mark Check In
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -438,14 +499,13 @@ export default function VisitsScreen() {
               <div className="text-gray-500">
                 {searchQuery ? (
                   <>
-                    <p className="text-lg font-medium mb-2">No visits found</p>
+                    <p className="text-lg font-medium mb-2">No appointments found</p>
                     <p className="text-sm">Try a different search term</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-lg font-medium mb-2">No visits yet</p>
-                    <p className="text-sm mb-4">Get started by creating a new visit</p>
-                    <Button onClick={handleCreateVisit}>+ Create Visit</Button>
+                    <p className="text-lg font-medium mb-2">No appointments yet</p>
+                    <p className="text-sm">Appointments will appear here</p>
                   </>
                 )}
               </div>
@@ -454,11 +514,11 @@ export default function VisitsScreen() {
         )}
       </div>
 
-      {/* Create Visit Modal */}
+      {/* Create Appointment Modal */}
       <Modal
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
-        title={step === 'mobile' ? 'Create Visit' : foundPatient ? 'Create Visit - Patient Found' : 'Create Visit - New Patient'}
+        title={step === 'mobile' ? 'Create Appointment' : foundPatient ? 'Create Appointment - Patient Found' : 'Create Appointment - New Patient'}
         size="lg"
         footer={
           <>
@@ -473,10 +533,10 @@ export default function VisitsScreen() {
               {step === 'mobile' ? 'Cancel' : 'Back'}
             </Button>
             <Button 
-              onClick={handleCreateVisitSubmit}
+              onClick={handleCreateAppointmentSubmit}
               disabled={searching}
             >
-              {searching ? 'Searching...' : step === 'mobile' ? 'Search' : 'Create Visit'}
+              {searching ? 'Searching...' : step === 'mobile' ? 'Search' : 'Create Appointment'}
             </Button>
           </>
         }
@@ -536,16 +596,6 @@ export default function VisitsScreen() {
                 disabled={!!foundPatient}
               />
               
-              <Input
-                label="Age"
-                type="number"
-                value={newPatient.age}
-                onChange={(e) => setNewPatient({ ...newPatient, age: e.target.value })}
-                error={errors.age}
-                placeholder="Enter age (optional)"
-                min="0"
-              />
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Gender *
@@ -581,13 +631,6 @@ export default function VisitsScreen() {
                 )}
               </div>
 
-              <Input
-                label="Visit Reason (Optional)"
-                value={visitReason}
-                onChange={(e) => setVisitReason(e.target.value)}
-                placeholder="e.g., General consultation, Follow-up, etc."
-              />
-
               {/* Doctor Selection - Only show if more than one doctor */}
               {doctors.length > 1 && (
                 <div>
@@ -614,6 +657,26 @@ export default function VisitsScreen() {
                   )}
                 </div>
               )}
+
+              {/* Appointment Date/Time */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Appointment Date & Time *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={appointmentDateTime}
+                  onChange={(e) => {
+                    setAppointmentDateTime(e.target.value);
+                    setErrors({ ...errors, appointmentDateTime: '' });
+                  }}
+                  className="flex h-10 w-full rounded-md border border-teal-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+                  min={new Date().toISOString().slice(0, 16)}
+                />
+                {errors.appointmentDateTime && (
+                  <p className="mt-1 text-sm text-red-600">{errors.appointmentDateTime}</p>
+                )}
+              </div>
             </>
           )}
         </div>

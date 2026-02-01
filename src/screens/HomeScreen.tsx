@@ -1,50 +1,256 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
+import { Button, DatePicker } from '../components/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { useClinic } from '../hooks/useClinic';
+import { clinicService } from '../services/clinicService';
 
 export default function HomeScreen() {
   const navigate = useNavigate();
   const { clinic } = useClinic();
   const clinicName = clinic?.name || 'Clinic OPD Management';
+  
+  // Date range state - default to today
+  const [startDate, setStartDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // YYYY-MM-DD
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // YYYY-MM-DD
+  });
+  
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalPatients: 0,
+    totalVisits: 0,
+    totalCompletedVisits: 0,
+    totalInProgressVisits: 0,
+    totalAppointments: 0,
+    totalPendingVisits: 0,
+    totalPendingAppointments: 0,
+  });
 
-  const handleStartOPD = () => {
-    navigate('/visits');
+  useEffect(() => {
+    loadStats();
+  }, [startDate, endDate]); // Reload when date range changes
+
+  const loadStats = async () => {
+    try {
+      setLoading(true);
+      
+      console.log('🔄 Loading clinic stats...', { startDate, endDate });
+      const statsData = await clinicService.getStats(undefined, {
+        start: startDate,
+        end: endDate,
+      });
+      
+      if (statsData) {
+        console.log('✅ Clinic stats loaded:', statsData);
+        setStats({
+          totalPatients: statsData.total_patients || 0,
+          totalVisits: statsData.total_visits || 0,
+          totalCompletedVisits: statsData.total_completed_visits || 0,
+          totalInProgressVisits: statsData.total_in_progress_visits || 0,
+          totalAppointments: statsData.total_appointments || 0,
+          totalPendingVisits: statsData.total_pending_visits || 0,
+          totalPendingAppointments: statsData.total_pending_appointments || 0,
+        });
+      } else {
+        console.error('❌ Failed to load clinic stats');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load stats:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-6 overflow-x-hidden">
-      <div className="text-center space-y-8 px-4 max-w-2xl">
-        <div className="space-y-4">
-          <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-            <svg
-              className="w-12 h-12 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
-            </svg>
+    <div className="min-h-[calc(100vh-4rem)] bg-gray-50 p-3 md:p-6 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto">
+        {/* Header - Compact on Mobile */}
+        <div className="mb-4 md:mb-6">
+          <div className="flex items-start justify-between gap-3 mb-3 md:mb-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl md:text-3xl font-bold text-teal-900 truncate">Welcome to {clinicName}</h1>
+              <p className="text-xs md:text-base text-gray-600 mt-1 hidden sm:block">Manage your outpatient department efficiently</p>
+            </div>
+            {/* Date Range Filter - Right Corner */}
+            <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+              <div className="w-32 sm:w-36">
+                <DatePicker
+                  value={startDate}
+                  onChange={(value) => {
+                    if (value) {
+                      setStartDate(value);
+                      // If end date is before start date, update end date
+                      if (endDate && value > endDate) {
+                        setEndDate(value);
+                      }
+                    }
+                  }}
+                  placeholder="Start date"
+                  className="w-full text-sm"
+                />
+              </div>
+              <div className="w-32 sm:w-36">
+                <DatePicker
+                  value={endDate}
+                  onChange={(value) => {
+                    if (value) {
+                      setEndDate(value);
+                      // If start date is after end date, update start date
+                      if (startDate && value < startDate) {
+                        setStartDate(value);
+                      }
+                    }
+                  }}
+                  placeholder="End date"
+                  className="w-full text-sm"
+                />
+              </div>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
-            Welcome to {clinicName}
-          </h1>
-          <p className="text-lg text-gray-600">
-            Manage your outpatient department efficiently
-          </p>
         </div>
-        <Button
-          onClick={handleStartOPD}
-          size="lg"
-          className="text-lg px-8 py-6 shadow-lg"
-          autoFocus
-        >
-          Start OPD
-        </Button>
+
+        {/* Overview Stats - Total Patients and Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6 mb-4 md:mb-6">
+          <Card className="border-teal-200 hover:shadow-md transition-shadow h-full flex flex-col">
+            <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
+              <CardTitle className="text-teal-900 text-xs md:text-sm">Total Patients</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6 flex-1 flex flex-col justify-center">
+              <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                {loading ? '...' : stats.totalPatients}
+              </div>
+              <p className="text-xs md:text-sm text-gray-600 mt-1">Registered</p>
+            </CardContent>
+          </Card>
+          <Card className="border-teal-200 h-full flex flex-col">
+            <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
+              <CardTitle className="text-teal-900 text-xs md:text-sm md:text-base">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6 flex-1 flex flex-col justify-center">
+              <div className="grid grid-cols-3 md:grid-cols-1 gap-2 md:gap-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex flex-col md:flex-row items-center justify-center md:justify-start h-16 md:h-auto md:py-3 text-xs md:text-sm gap-2"
+                  onClick={() => navigate('/appointments')}
+                >
+                  <span className="text-lg md:text-xl md:mb-0 mb-1">📅</span>
+                  <span>Appointments</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex flex-col md:flex-row items-center justify-center md:justify-start h-16 md:h-auto md:py-3 text-xs md:text-sm gap-2"
+                  onClick={() => navigate('/visits')}
+                >
+                  <span className="text-lg md:text-xl md:mb-0 mb-1">👥</span>
+                  <span>Queue</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex flex-col md:flex-row items-center justify-center md:justify-start h-16 md:h-auto md:py-3 text-xs md:text-sm gap-2"
+                  onClick={() => navigate('/patients')}
+                >
+                  <span className="text-lg md:text-xl md:mb-0 mb-1">👤</span>
+                  <span>Patients</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Actions - First Row After Total Patients */}
+
+        {/* Visits Section */}
+        <div className="mb-4 md:mb-6">
+          <h2 className="text-lg md:text-xl font-semibold text-teal-900 mb-3 md:mb-4">Visits</h2>
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
+            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+              <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
+                <CardTitle className="text-teal-900 text-xs md:text-sm">Total Visits</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                  {loading ? '...' : stats.totalVisits}
+                </div>
+                <p className="text-xs md:text-sm text-gray-600 mt-1">All time</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+              <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
+                <CardTitle className="text-teal-900 text-xs md:text-sm">In Progress</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                  {loading ? '...' : stats.totalInProgressVisits}
+                </div>
+                <p className="text-xs md:text-sm text-gray-600 mt-1">Active</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+              <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
+                <CardTitle className="text-teal-900 text-xs md:text-sm">Completed</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                  {loading ? '...' : stats.totalCompletedVisits}
+                </div>
+                <p className="text-xs md:text-sm text-gray-600 mt-1">Finished</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+              <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
+                <CardTitle className="text-teal-900 text-xs md:text-sm">Pending</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                  {loading ? '...' : stats.totalPendingVisits}
+                </div>
+                <p className="text-xs md:text-sm text-gray-600 mt-1">Waiting</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Appointments Section */}
+        <div className="mb-4 md:mb-6">
+          <h2 className="text-lg md:text-xl font-semibold text-teal-900 mb-3 md:mb-4">Appointments</h2>
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
+            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+              <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
+                <CardTitle className="text-teal-900 text-xs md:text-sm">Total Appointments</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                  {loading ? '...' : stats.totalAppointments}
+                </div>
+                <p className="text-xs md:text-sm text-gray-600 mt-1">All time</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+              <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
+                <CardTitle className="text-teal-900 text-xs md:text-sm">Pending</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                  {loading ? '...' : stats.totalPendingAppointments}
+                </div>
+                <p className="text-xs md:text-sm text-gray-600 mt-1">Waiting</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
       </div>
     </div>
   );

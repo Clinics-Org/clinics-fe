@@ -23,7 +23,7 @@ class ApiClient {
 
   constructor() {
     // Get base URL from environment variable or use default
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'https://clinics-api-13266793207.us-central1.run.app/api';
   }
 
   /**
@@ -54,7 +54,10 @@ class ApiClient {
       (endpoint.startsWith('/visits/') && endpoint.includes('/get-all/')) ||
       endpoint.match(/^\/visits\/[^/]+$/) || // /visits/:visitId
       endpoint.startsWith('/visits/prescription/') || // /visits/prescription/:prescriptionId
-      (endpoint.startsWith('/visits/') && !endpoint.includes('/patient/'))
+      (endpoint.startsWith('/visits/') && !endpoint.includes('/patient/')) ||
+      endpoint.startsWith('/appointments/') || // All appointment endpoints
+      endpoint.startsWith('/medications') || // Medication search endpoint
+      endpoint.startsWith('/clinic-stats/') // Clinic stats endpoint
     ) {
       return this.realRequest<T>('GET', endpoint, undefined, params);
     }
@@ -75,7 +78,9 @@ class ApiClient {
       endpoint === '/patients' || // Keep for backward compatibility
       endpoint.startsWith('/patients/') ||
       endpoint === '/visits' ||
-      endpoint.startsWith('/visits/')
+      endpoint.startsWith('/visits/') ||
+      endpoint === '/appointments' ||
+      endpoint.startsWith('/appointments/')
     ) {
       return this.realRequest<T>('POST', endpoint, data);
     }
@@ -92,7 +97,8 @@ class ApiClient {
     if (
       endpoint.startsWith('/visits/') ||
       endpoint.startsWith('/patients/clinic/') || 
-      endpoint.startsWith('/clinics/')
+      endpoint.startsWith('/clinics/') ||
+      endpoint.startsWith('/appointments/')
     ) {
       return this.realRequest<T>('PUT', endpoint, data);
     }
