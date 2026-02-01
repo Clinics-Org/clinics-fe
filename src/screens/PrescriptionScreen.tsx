@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Input, Modal, NotesInput } from '../components/ui';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Button, Input, Modal, NotesInput, MedicationInput } from '../components/ui';
 import {
   Table,
   TableBody,
@@ -22,6 +22,8 @@ import type { Medicine, Prescription, FollowUp, Visit } from '../types';
 export default function PrescriptionScreen() {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const navigationState = location.state as { notes?: string } | null;
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [followUp, setFollowUp] = useState<FollowUp | null>(null);
   const [followUpValue, setFollowUpValue] = useState('');
@@ -30,40 +32,97 @@ export default function PrescriptionScreen() {
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
   const [visit, setVisit] = useState<Visit | null>(null);
+  const [existingPrescriptionNotes, setExistingPrescriptionNotes] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadVisit = async () => {
-      if (!visitId) {
-        navigate('/visits');
-        return;
-      }
+      try {
+        setLoading(true);
+        setError(null);
 
-      const visitData = await visitService.getById(visitId);
-      if (!visitData) {
-        navigate('/visits');
-        return;
-      }
-
-      setVisit(visitData);
-      if (visitData.prescription && visitData.prescription.medicines.length > 0) {
-        setMedicines(visitData.prescription.medicines);
-        setFollowUp(visitData.prescription.followUp || null);
-        if (visitData.prescription.followUp) {
-          setFollowUpValue(visitData.prescription.followUp.value.toString());
-          setFollowUpUnit(visitData.prescription.followUp.unit);
-          setFollowUpEnabled(true);
-        } else {
-          setFollowUpEnabled(false);
+        if (!visitId) {
+          console.log('⚠️ No visitId provided');
+          setLoading(false);
+          navigate('/visits');
+          return;
         }
-      } else {
-        // Always start with at least one empty medicine row
-        const initialMedicine: Medicine = prescriptionService.createMedicine({
-          name: '',
-          dosage: '',
-          duration: '',
-          notes: '',
-        });
-        setMedicines([initialMedicine]);
+
+        console.log('🔄 Loading visit:', visitId);
+        const visitData = await visitService.getById(visitId);
+        
+        if (!visitData) {
+          console.error('❌ Visit not found:', visitId);
+          setError('Visit not found');
+          setLoading(false);
+          toast.error('Visit not found');
+          // Don't navigate immediately, let user see the error
+          return;
+        }
+
+        console.log('✅ Visit loaded:', visitData);
+        setVisit(visitData);
+        
+        // If prescription_id exists, fetch the prescription data
+        if (visitData.prescription_id) {
+          console.log('🔄 Loading prescription:', visitData.prescription_id);
+          try {
+            const prescriptionData = await prescriptionService.getById(visitData.prescription_id);
+            if (prescriptionData) {
+              console.log('✅ Prescription loaded:', prescriptionData);
+              setMedicines(prescriptionData.medicines.length > 0 ? prescriptionData.medicines : [
+                prescriptionService.createMedicine({ name: '', dosage: '', duration: '', notes: '' })
+              ]);
+              setFollowUp(prescriptionData.followUp || null);
+              setExistingPrescriptionNotes(prescriptionData.notes);
+              if (prescriptionData.followUp) {
+                setFollowUpValue(prescriptionData.followUp.value.toString());
+                setFollowUpUnit(prescriptionData.followUp.unit);
+                setFollowUpEnabled(true);
+              } else {
+                setFollowUpEnabled(false);
+              }
+            } else {
+              console.log('⚠️ Prescription not found, starting with empty medicine');
+              // If fetch failed, start with empty medicine row
+              const initialMedicine: Medicine = prescriptionService.createMedicine({
+                name: '',
+                dosage: '',
+                duration: '',
+                notes: '',
+              });
+              setMedicines([initialMedicine]);
+            }
+          } catch (prescriptionError: any) {
+            console.error('❌ Error loading prescription:', prescriptionError);
+            // Continue with empty medicine even if prescription fetch fails
+            const initialMedicine: Medicine = prescriptionService.createMedicine({
+              name: '',
+              dosage: '',
+              duration: '',
+              notes: '',
+            });
+            setMedicines([initialMedicine]);
+          }
+        } else {
+          console.log('ℹ️ No prescription_id, starting with empty medicine');
+          // No prescription exists yet, start with empty medicine row
+          const initialMedicine: Medicine = prescriptionService.createMedicine({
+            name: '',
+            dosage: '',
+            duration: '',
+            notes: '',
+          });
+          setMedicines([initialMedicine]);
+        }
+      } catch (err: any) {
+        console.error('❌ Error loading visit:', err);
+        setError(err?.message || 'Failed to load visit');
+        toast.error('Failed to load visit data');
+      } finally {
+        console.log('🏁 Setting loading to false');
+        setLoading(false);
       }
     };
 
@@ -89,41 +148,50 @@ export default function PrescriptionScreen() {
   const handleRemoveMedicine = (id: string) => {
     // Prevent removing the last medicine - always keep at least one
     if (medicines.length > 1) {
-      setMedicines(medicines.filter((med) => med.id !== id));
+    setMedicines(medicines.filter((med) => med.id !== id));
     }
   };
 
-  const handleSavePrescription = async () => {
+  const handleSavePrescription = async (): Promise<boolean> => {
     const prescription: Prescription = {
       medicines: medicines.filter((med) => med.name.trim() !== ''),
       followUp: followUp || undefined,
+      // Prefer notes passed from ConsultationScreen, otherwise existing prescription notes
+      notes: navigationState?.notes ?? existingPrescriptionNotes ?? undefined,
     };
 
     if (prescription.medicines.length === 0) {
       toast.error('Please add at least one medicine');
-      return;
+      return false;
     }
 
     const success = await prescriptionService.saveToVisit(visitId!, prescription);
     if (success) {
-      // Reload visit to update stepper
+      // Reload visit to update stepper and prescription_id
       const updatedVisit = await visitService.getById(visitId!);
       if (updatedVisit) {
         setVisit(updatedVisit);
       }
       toast.success('Prescription saved');
+      return true;
     } else {
       toast.error('Failed to save prescription');
+      return false;
     }
   };
 
   const handleFinishVisit = async () => {
-    await handleSavePrescription();
-    if (visitId) {
-      await visitService.complete(visitId);
+    const saved = await handleSavePrescription();
+    if (!saved || !visitId) {
+      return;
     }
-    navigate('/visits');
-    toast.success('Visit completed');
+
+    // Mark visit as completed
+    await visitService.updateStatus(visitId, 'completed');
+
+    // Redirect to print preview for this visit
+    navigate(`/print-preview/${visitId}`);
+    toast.success('Visit completed. Ready to print.');
   };
 
   const handleWhatsApp = async () => {
@@ -155,6 +223,12 @@ export default function PrescriptionScreen() {
     });
 
     setIsWhatsAppModalOpen(false);
+    
+    // Update visit status to completed after sending WhatsApp
+    if (visitId) {
+      await visitService.updateStatus(visitId, 'completed');
+    }
+    
     if (result.success) {
       toast.success('Prescription sent on WhatsApp', result.message || 'The prescription has been shared with the patient');
     } else {
@@ -167,8 +241,12 @@ export default function PrescriptionScreen() {
       toast.error('Please add at least one medicine before printing');
       return;
     }
-    await handleSavePrescription();
-    navigate(`/print-preview/${visitId}`);
+    const saved = await handleSavePrescription();
+    if (saved && visitId) {
+      // Small delay to ensure the visit is updated in the backend
+      await new Promise(resolve => setTimeout(resolve, 300));
+      navigate(`/print-preview/${visitId}`);
+    }
   };
 
   const handleFollowUpValueChange = (value: string) => {
@@ -198,6 +276,46 @@ export default function PrescriptionScreen() {
 
   const prescriptionPreview = medicines.filter((med) => med.name.trim() !== '');
 
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-500 mb-2">Loading prescription...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state only if we have an error and no visit (and not loading)
+  if (error && !visit && !loading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">{error}</div>
+          <Button onClick={() => navigate('/visits')}>Go Back to Visits</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // If no visit after loading completes, show message
+  if (!visit && !loading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-500 mb-4">Visit not found</div>
+          <Button onClick={() => navigate('/visits')}>Go Back to Visits</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Safety check: if visit is still null after loading, return null to prevent blank screen
+  if (!visit) {
+    return null;
+  }
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden pb-32 md:pb-24">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
@@ -212,8 +330,8 @@ export default function PrescriptionScreen() {
           <div className="mb-6">
             <h2 className="text-xl md:text-2xl font-semibold text-teal-900 mb-4">Prescription</h2>
 
-            {/* Mobile Card Layout */}
-            <div className="md:hidden space-y-4">
+                {/* Mobile Card Layout */}
+                <div className="md:hidden space-y-4">
                   {medicines.map((medicine, index) => (
                     <div
                       key={medicine.id}
@@ -223,14 +341,14 @@ export default function PrescriptionScreen() {
                         <span className="text-sm font-medium text-teal-700">Medicine #{index + 1}</span>
                         <div className="flex items-center gap-2">
                           {medicines.length > 1 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveMedicine(medicine.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
-                            >
-                              Remove
-                            </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveMedicine(medicine.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
+                        >
+                          Remove
+                        </Button>
                           )}
                           {index === medicines.length - 1 && (
                             <Button
@@ -247,13 +365,13 @@ export default function PrescriptionScreen() {
                           )}
                         </div>
                       </div>
-                      <Input
+                      <MedicationInput
                         label="Medicine Name"
                         value={medicine.name}
-                        onChange={(e) =>
-                          handleUpdateMedicine(medicine.id, 'name', e.target.value)
+                        onChange={(value) =>
+                          handleUpdateMedicine(medicine.id, 'name', value)
                         }
-                        placeholder="Medicine name"
+                        placeholder="Search medication..."
                         className="w-full"
                       />
                       <div className="grid grid-cols-2 gap-3">
@@ -287,9 +405,9 @@ export default function PrescriptionScreen() {
                       />
                     </div>
                   ))}
-            </div>
+                </div>
 
-            {/* Desktop Table Layout */}
+                {/* Desktop Table Layout */}
             <div className="hidden md:block overflow-x-auto border border-teal-100 rounded-lg relative">
                   <Table>
                     <TableHeader className="bg-teal-50">
@@ -305,12 +423,12 @@ export default function PrescriptionScreen() {
                       {medicines.map((medicine, index) => (
                         <TableRow key={medicine.id} className="hover:bg-teal-50/50">
                           <TableCell className="min-w-[250px]">
-                            <Input
+                            <MedicationInput
                               value={medicine.name}
-                              onChange={(e) =>
-                                handleUpdateMedicine(medicine.id, 'name', e.target.value)
+                              onChange={(value) =>
+                                handleUpdateMedicine(medicine.id, 'name', value)
                               }
-                              placeholder="Medicine name"
+                              placeholder="Search medication..."
                               className="w-full"
                             />
                           </TableCell>
@@ -347,14 +465,14 @@ export default function PrescriptionScreen() {
                           <TableCell>
                             <div className="flex items-center justify-end gap-2">
                               {medicines.length > 1 && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveMedicine(medicine.id)}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveMedicine(medicine.id)}
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
-                                >
-                                  Remove
-                                </Button>
+                            >
+                              Remove
+                            </Button>
                               )}
                               {index === medicines.length - 1 && (
                                 <Button
@@ -375,7 +493,7 @@ export default function PrescriptionScreen() {
                       ))}
                     </TableBody>
                   </Table>
-            </div>
+                </div>
           </div>
 
           {/* Follow-up Section */}

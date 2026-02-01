@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
-
-const CLINIC_NAME = (import.meta as any).env?.VITE_CLINIC_NAME || 'Clinic OPD Management';
+import { useClinic } from '../../hooks/useClinic';
 
 export default function Header() {
+  const { clinic } = useClinic();
+  const clinicName = clinic?.name || 'Clinic OPD Management';
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-teal-100 shadow-sm">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
@@ -23,7 +25,7 @@ export default function Header() {
                 />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-gray-900">{CLINIC_NAME}</h1>
+            <h1 className="text-xl font-bold text-gray-900">{clinicName}</h1>
           </Link>
         </div>
         <div className="flex items-center gap-4">

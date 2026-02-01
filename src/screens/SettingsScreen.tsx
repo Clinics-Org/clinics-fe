@@ -1,8 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui';
+import { useClinic } from '../hooks/useClinic';
 
 export default function SettingsScreen() {
-  const CLINIC_NAME = (import.meta as any).env?.VITE_CLINIC_NAME || 'Clinic OPD Management';
+  const { clinic, loading } = useClinic();
+  const clinicName = clinic?.name || 'Clinic OPD Management';
+  const clinicAddress = clinic?.address || '';
+  const clinicPhone = clinic?.phone || '';
+  const clinicEmail = clinic?.email || '';
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 p-6">
@@ -13,15 +18,45 @@ export default function SettingsScreen() {
             <CardTitle className="text-teal-900">Clinic Information</CardTitle>
           </CardHeader>
           <CardContent className="pt-6 space-y-4">
-            <Input
-              label="Clinic Name"
-              value={CLINIC_NAME}
-              disabled
-              className="bg-gray-50"
-            />
-            <p className="text-sm text-gray-600">
-              To change the clinic name, set the VITE_CLINIC_NAME environment variable.
-            </p>
+            {loading ? (
+              <div className="text-sm text-gray-600">Loading clinic data...</div>
+            ) : (
+              <>
+                <Input
+                  label="Clinic Name"
+                  value={clinicName}
+                  disabled
+                  className="bg-gray-50"
+                />
+                {clinicAddress && (
+                  <Input
+                    label="Address"
+                    value={clinicAddress}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                )}
+                {clinicPhone && (
+                  <Input
+                    label="Phone"
+                    value={clinicPhone}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                )}
+                {clinicEmail && (
+                  <Input
+                    label="Email"
+                    value={clinicEmail}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                )}
+                <p className="text-sm text-gray-600">
+                  Clinic information is loaded from the API.
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
