@@ -67,18 +67,18 @@ export default function HomeScreen() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50 p-3 md:p-6 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-[calc(100vh-4rem)] bg-gray-50 p-3 md:p-6 overflow-x-hidden w-full">
+      <div className="max-w-7xl mx-auto w-full">
         {/* Header - Compact on Mobile */}
         <div className="mb-4 md:mb-6">
-          <div className="flex items-start justify-between gap-3 mb-3 md:mb-4">
-            <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 md:mb-4 w-full">
+            <div className="flex-1 min-w-0 w-full sm:w-auto">
               <h1 className="text-xl md:text-3xl font-bold text-teal-900 truncate">Welcome to {clinicName}</h1>
               <p className="text-xs md:text-base text-gray-600 mt-1 hidden sm:block">Manage your outpatient department efficiently</p>
             </div>
             {/* Date Range Filter - Right Corner */}
-            <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
-              <div className="w-32 sm:w-36">
+            <div className="flex flex-row gap-2 flex-shrink-0 w-full sm:w-auto">
+              <div className="flex-1 sm:flex-initial sm:w-32 md:w-36 min-w-0">
                 <DatePicker
                   value={startDate}
                   onChange={(value) => {
@@ -94,7 +94,7 @@ export default function HomeScreen() {
                   className="w-full text-sm"
                 />
               </div>
-              <div className="w-32 sm:w-36">
+              <div className="flex-1 sm:flex-initial sm:w-32 md:w-36 min-w-0">
                 <DatePicker
                   value={endDate}
                   onChange={(value) => {
@@ -115,24 +115,24 @@ export default function HomeScreen() {
         </div>
 
         {/* Overview Stats - Total Patients and Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6 mb-4 md:mb-6">
-          <Card className="border-teal-200 hover:shadow-md transition-shadow h-full flex flex-col">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6 mb-4 md:mb-6 w-full">
+          <Card className="border-teal-200 hover:shadow-md transition-shadow h-full flex flex-col w-full min-w-0">
             <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
-              <CardTitle className="text-teal-900 text-xs md:text-sm">Total Patients</CardTitle>
+              <CardTitle className="text-teal-900 text-xs md:text-sm truncate">Total Patients</CardTitle>
             </CardHeader>
             <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6 flex-1 flex flex-col justify-center">
-              <div className="text-2xl md:text-3xl font-bold text-teal-600">
+              <div className="text-2xl md:text-3xl font-bold text-teal-600 truncate">
                 {loading ? '...' : stats.totalPatients}
               </div>
-              <p className="text-xs md:text-sm text-gray-600 mt-1">Registered</p>
+              <p className="text-xs md:text-sm text-gray-600 mt-1 truncate">Registered</p>
             </CardContent>
           </Card>
-          <Card className="border-teal-200 h-full flex flex-col">
+          <Card className="border-teal-200 h-full flex flex-col w-full min-w-0">
             <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
-              <CardTitle className="text-teal-900 text-xs md:text-sm md:text-base">Quick Actions</CardTitle>
+              <CardTitle className="text-teal-900 text-xs md:text-sm md:text-base truncate">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6 flex-1 flex flex-col justify-center">
-              <div className="grid grid-cols-3 md:grid-cols-1 gap-2 md:gap-3">
+            <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6 flex-1 flex flex-col justify-center min-w-0">
+              <div className="grid grid-cols-3 md:grid-cols-1 gap-2 md:gap-3 w-full">
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -168,84 +168,84 @@ export default function HomeScreen() {
         {/* Quick Actions - First Row After Total Patients */}
 
         {/* Visits Section */}
-        <div className="mb-4 md:mb-6">
+        <div className="mb-4 md:mb-6 w-full">
           <h2 className="text-lg md:text-xl font-semibold text-teal-900 mb-3 md:mb-4">Visits</h2>
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
-            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6 w-full">
+            <Card className="border-teal-200 hover:shadow-md transition-shadow w-full min-w-0">
               <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
-                <CardTitle className="text-teal-900 text-xs md:text-sm">Total Visits</CardTitle>
+                <CardTitle className="text-teal-900 text-xs md:text-sm truncate">Total Visits</CardTitle>
               </CardHeader>
               <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
-                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600 truncate">
                   {loading ? '...' : stats.totalVisits}
                 </div>
-                <p className="text-xs md:text-sm text-gray-600 mt-1">All time</p>
+                <p className="text-xs md:text-sm text-gray-600 mt-1 truncate">All time</p>
               </CardContent>
             </Card>
 
-            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+            <Card className="border-teal-200 hover:shadow-md transition-shadow w-full min-w-0">
               <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
-                <CardTitle className="text-teal-900 text-xs md:text-sm">In Progress</CardTitle>
+                <CardTitle className="text-teal-900 text-xs md:text-sm truncate">In Progress</CardTitle>
               </CardHeader>
               <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
-                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600 truncate">
                   {loading ? '...' : stats.totalInProgressVisits}
                 </div>
-                <p className="text-xs md:text-sm text-gray-600 mt-1">Active</p>
+                <p className="text-xs md:text-sm text-gray-600 mt-1 truncate">Active</p>
               </CardContent>
             </Card>
 
-            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+            <Card className="border-teal-200 hover:shadow-md transition-shadow w-full min-w-0">
               <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
-                <CardTitle className="text-teal-900 text-xs md:text-sm">Completed</CardTitle>
+                <CardTitle className="text-teal-900 text-xs md:text-sm truncate">Completed</CardTitle>
               </CardHeader>
               <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
-                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600 truncate">
                   {loading ? '...' : stats.totalCompletedVisits}
                 </div>
-                <p className="text-xs md:text-sm text-gray-600 mt-1">Finished</p>
+                <p className="text-xs md:text-sm text-gray-600 mt-1 truncate">Finished</p>
               </CardContent>
             </Card>
 
-            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+            <Card className="border-teal-200 hover:shadow-md transition-shadow w-full min-w-0">
               <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
-                <CardTitle className="text-teal-900 text-xs md:text-sm">Pending</CardTitle>
+                <CardTitle className="text-teal-900 text-xs md:text-sm truncate">Pending</CardTitle>
               </CardHeader>
               <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
-                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600 truncate">
                   {loading ? '...' : stats.totalPendingVisits}
                 </div>
-                <p className="text-xs md:text-sm text-gray-600 mt-1">Waiting</p>
+                <p className="text-xs md:text-sm text-gray-600 mt-1 truncate">Waiting</p>
               </CardContent>
             </Card>
           </div>
         </div>
 
         {/* Appointments Section */}
-        <div className="mb-4 md:mb-6">
+        <div className="mb-4 md:mb-6 w-full">
           <h2 className="text-lg md:text-xl font-semibold text-teal-900 mb-3 md:mb-4">Appointments</h2>
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
-            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6 w-full">
+            <Card className="border-teal-200 hover:shadow-md transition-shadow w-full min-w-0">
               <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
-                <CardTitle className="text-teal-900 text-xs md:text-sm">Total Appointments</CardTitle>
+                <CardTitle className="text-teal-900 text-xs md:text-sm truncate">Total Appointments</CardTitle>
               </CardHeader>
               <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
-                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600 truncate">
                   {loading ? '...' : stats.totalAppointments}
                 </div>
-                <p className="text-xs md:text-sm text-gray-600 mt-1">All time</p>
+                <p className="text-xs md:text-sm text-gray-600 mt-1 truncate">All time</p>
               </CardContent>
             </Card>
 
-            <Card className="border-teal-200 hover:shadow-md transition-shadow">
+            <Card className="border-teal-200 hover:shadow-md transition-shadow w-full min-w-0">
               <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100 py-2 md:py-3">
-                <CardTitle className="text-teal-900 text-xs md:text-sm">Pending</CardTitle>
+                <CardTitle className="text-teal-900 text-xs md:text-sm truncate">Pending</CardTitle>
               </CardHeader>
               <CardContent className="pt-3 md:pt-6 pb-3 md:pb-6">
-                <div className="text-2xl md:text-3xl font-bold text-teal-600">
+                <div className="text-2xl md:text-3xl font-bold text-teal-600 truncate">
                   {loading ? '...' : stats.totalPendingAppointments}
                 </div>
-                <p className="text-xs md:text-sm text-gray-600 mt-1">Waiting</p>
+                <p className="text-xs md:text-sm text-gray-600 mt-1 truncate">Waiting</p>
               </CardContent>
             </Card>
           </div>
