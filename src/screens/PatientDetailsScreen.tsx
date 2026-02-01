@@ -46,11 +46,6 @@ export default function PatientDetailsScreen() {
     loadData();
   }, [patientId, navigate]);
 
-  const handleViewPrescription = (visit: Visit) => {
-    if (visit.prescription) {
-      navigate(`/print-preview/${visit.id}`);
-    }
-  };
 
   const handleViewVisit = (visit: Visit) => {
     navigate(`/visit/${visit.id}`);

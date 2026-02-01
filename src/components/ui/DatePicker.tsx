@@ -9,7 +9,7 @@ export interface DatePickerProps {
   className?: string;
 }
 
-const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
+const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
   ({ value, onChange, placeholder = 'Select date', className, ...props }, ref) => {
     const [open, setOpen] = React.useState(false);
     const [selectedDate, setSelectedDate] = React.useState<Date | null>(() => {

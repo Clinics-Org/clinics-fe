@@ -11,7 +11,6 @@ export default function ConsultationScreen() {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
   const [notes, setNotes] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
   const [visit, setVisit] = useState<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const saveTimeoutRef = useRef<number | null>(null);
@@ -48,17 +47,6 @@ export default function ConsultationScreen() {
     loadVisit();
   }, [visitId, navigate]);
 
-  const saveNotes = async () => {
-    if (!visitId) return;
-    setIsSaving(true);
-    await visitService.updateNotes(visitId, notes);
-    // Reload visit to update stepper
-    const updatedVisit = await visitService.getById(visitId);
-    if (updatedVisit) {
-      setVisit(updatedVisit);
-    }
-    setTimeout(() => setIsSaving(false), 300);
-  };
 
   const handleNotesChange = (value: string) => {
     setNotes(value);
@@ -113,9 +101,6 @@ export default function ConsultationScreen() {
                   className="w-full min-h-[400px] px-3 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-y"
                   autoFocus
                 />
-                {isSaving && (
-                  <p className="mt-2 text-xs text-gray-500">Saving...</p>
-                )}
               </div>
               <div className="flex justify-end">
                 <Button onClick={handleProceed} size="lg">

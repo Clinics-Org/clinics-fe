@@ -1,7 +1,7 @@
 // Appointment service - Handles appointment API calls
 
 import { apiClient } from './apiClient';
-import type { Appointment, ClinicDoctor } from '../types';
+import type { Appointment } from '../types';
 
 export const appointmentService = {
   /**
