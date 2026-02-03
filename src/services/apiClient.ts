@@ -8,14 +8,16 @@ export interface ApiResponse<T> {
   error?: {
     code: string;
     message: string;
-    statusCode: number;
+    statusCode?: number;
+    details?: Record<string, string[]>; // Field-specific validation errors
   };
 }
 
 export interface ApiError {
   code: string;
   message: string;
-  statusCode: number;
+  statusCode?: number;
+  details?: Record<string, string[]>; // Field-specific validation errors
 }
 
 class ApiClient {
@@ -45,19 +47,23 @@ class ApiClient {
   async get<T>(endpoint: string, params?: Record<string, string | number>): Promise<ApiResponse<T>> {
     // Check if this is a real API endpoint that should use HTTP
     if (
+      endpoint === '/clinic' || // GET /api/clinic (singular, uses cookie)
+      endpoint === '/patients/all' || // GET /api/patients/all
       endpoint.startsWith('/patients/clinic/') || 
       endpoint.startsWith('/clinics/') ||
       endpoint.startsWith('/patients/search') ||
       endpoint.startsWith('/patient/') || // /patient/:id (singular)
-      (endpoint.startsWith('/patients/') && !endpoint.startsWith('/patients/clinic/') && !endpoint.startsWith('/patients/search')) || // fallback for /patients/:id
+      (endpoint.startsWith('/patients/') && !endpoint.startsWith('/patients/clinic/') && !endpoint.startsWith('/patients/search') && endpoint !== '/patients/all') || // fallback for /patients/:id
+      endpoint === '/visits/all/visit' || // GET /api/visits/all/visit
       endpoint.startsWith('/visits/patient/') || // /visits/patient/:patientId
-      (endpoint.startsWith('/visits/') && endpoint.includes('/get-all/')) ||
       endpoint.match(/^\/visits\/[^/]+$/) || // /visits/:visitId
       endpoint.startsWith('/visits/prescription/') || // /visits/prescription/:prescriptionId
-      (endpoint.startsWith('/visits/') && !endpoint.includes('/patient/')) ||
-      endpoint.startsWith('/appointments/') || // All appointment endpoints
+      (endpoint.startsWith('/visits/') && !endpoint.includes('/patient/') && endpoint !== '/visits/all/visit') ||
+      endpoint === '/appointments/all/appointments' || // GET /api/appointments/all/appointments
+      endpoint.startsWith('/appointments/') || // All other appointment endpoints
       endpoint.startsWith('/medications') || // Medication search endpoint
-      endpoint.startsWith('/clinic-stats/') // Clinic stats endpoint
+      endpoint === '/clinic-stats' || // GET /api/clinic-stats
+      endpoint.startsWith('/clinic-stats/') // Backward compatibility
     ) {
       return this.realRequest<T>('GET', endpoint, undefined, params);
     }
@@ -72,6 +78,7 @@ class ApiClient {
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
     // Check if this is a real API endpoint that should use HTTP
     if (
+      endpoint.startsWith('/auth/') || // Auth endpoints
       endpoint.startsWith('/patients/clinic/') || 
       endpoint.startsWith('/clinics/') ||
       endpoint === '/patient' || // POST /api/patient (singular for create)
@@ -121,6 +128,19 @@ class ApiClient {
   }
 
   /**
+   * Get authorization header
+   */
+  private getAuthHeader(): string | null {
+    try {
+      // Use dynamic import to avoid circular dependency
+      const token = localStorage.getItem('auth_access_token');
+      return token ? `Bearer ${token}` : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
    * Real HTTP request handler
    */
   private async realRequest<T>(
@@ -131,11 +151,21 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     try {
       const url = this.buildURL(endpoint, params);
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      // Add Authorization header if token exists
+      const authHeader = this.getAuthHeader();
+      if (authHeader) {
+        headers['Authorization'] = authHeader;
+      }
+
       const options: RequestInit = {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
+        credentials: 'include', // Include cookies (for current_clinic_id)
       };
 
       if (data && (method === 'POST' || method === 'PATCH' || method === 'PUT')) {
@@ -241,6 +271,7 @@ class ApiClient {
             code: result.error?.code || 'HTTP_ERROR',
             message: result.error?.message || result.message || `HTTP ${response.status}`,
             statusCode: response.status,
+            details: result.error?.details || result.details, // Extract validation details
           },
         };
       }
@@ -274,33 +305,44 @@ class ApiClient {
           error: result.error,
         };
       }
-      // Case 4: API returns object directly - check for common array fields
+      // Case 4: API returns object directly - check for common array fields or auth tokens
       else {
         console.log('📦 API returned object directly, checking for array fields...');
-        // Check if object has common array field names
-        const possibleArrayFields = ['data', 'patients', 'items', 'results', 'content'];
-        let foundArray: any = null;
         
-        for (const field of possibleArrayFields) {
-          if (result[field] && Array.isArray(result[field])) {
-            foundArray = result[field];
-            console.log(`✅ Found array in field '${field}' with ${foundArray.length} items`);
-            break;
-          }
-        }
-        
-        if (foundArray) {
-          apiResponse = {
-            success: true,
-            data: foundArray as T,
-          };
-        } else {
-          // If no array found, use the object as-is (might be a single item or different structure)
-          console.log('⚠️ No array field found in object, using object as data');
+        // Check if this is an auth response (has access/refresh tokens)
+        if (result.access || result.refresh) {
+          console.log('✅ Auth response detected, using object as data');
           apiResponse = {
             success: true,
             data: result as T,
           };
+        }
+        // Check if object has common array field names
+        else {
+          const possibleArrayFields = ['data', 'patients', 'items', 'results', 'content'];
+          let foundArray: any = null;
+          
+          for (const field of possibleArrayFields) {
+            if (result[field] && Array.isArray(result[field])) {
+              foundArray = result[field];
+              console.log(`✅ Found array in field '${field}' with ${foundArray.length} items`);
+              break;
+            }
+          }
+          
+          if (foundArray) {
+            apiResponse = {
+              success: true,
+              data: foundArray as T,
+            };
+          } else {
+            // If no array found, use the object as-is (might be a single item or different structure)
+            console.log('⚠️ No array field found in object, using object as data');
+            apiResponse = {
+              success: true,
+              data: result as T,
+            };
+          }
         }
       }
 

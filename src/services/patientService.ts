@@ -76,13 +76,9 @@ export const patientService = {
    */
   async create(patientData: Omit<Patient, 'id' | 'createdAt'>): Promise<Patient> {
     try {
-      // Get clinic ID
-      const { clinicService } = await import('./clinicService');
-      const clinicId = clinicService.getClinicId();
-
       // Map our Patient format to API request format
+      // Backend will get clinic_id from cookie
       const apiRequestData = {
-        clinic_id: clinicId,
         name: patientData.name,
         mobile_number: patientData.mobile,
         gender: this.mapGenderToAPI(patientData.gender),
@@ -98,7 +94,11 @@ export const patientService = {
 
       if (!response.success || !response.data) {
         console.error('❌ Failed to create patient:', response.error);
-        throw new Error(response.error?.message || 'Failed to create patient');
+        // Create error object with details for validation errors
+        const error: any = new Error(response.error?.message || 'Failed to create patient');
+        error.code = response.error?.code;
+        error.details = response.error?.details;
+        throw error;
       }
 
       // Map API response back to our Patient format
@@ -136,18 +136,14 @@ export const patientService = {
 
   /**
    * Get all patients for a clinic
-   * GET /api/patients/clinic/{clinic_id}
+   * GET /api/patients/all
    */
   async getAll(clinicId?: string): Promise<PatientSearchResult[]> {
     try {
-      // Get clinic ID from parameter or use hardcoded clinic ID
-      const { clinicService } = await import('./clinicService');
-      const storedClinicId = clinicId || clinicService.getClinicId();
+      console.log('Fetching all patients...');
       
-      console.log('Fetching patients for clinic:', storedClinicId);
-      
-      // Use real API endpoint
-      const response = await apiClient.get<PatientSearchResult[]>(`/patients/clinic/${storedClinicId}`);
+      // Use real API endpoint - backend will get clinic_id from cookie
+      const response = await apiClient.get<PatientSearchResult[]>(`/patients/all`);
       
       console.log('API Response:', {
         success: response.success,

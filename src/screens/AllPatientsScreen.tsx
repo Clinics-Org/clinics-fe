@@ -5,6 +5,8 @@ import { Card, CardContent } from '../components/ui/Card';
 import { patientService } from '../services/patientService';
 import { toast } from '../utils/toast';
 import type { Patient } from '../types';
+import { validatePhoneNumber, formatPhoneInput } from '../utils/phoneValidation';
+import { extractValidationErrors, getErrorMessage, hasValidationErrors } from '../utils/errorHandler';
 
 export default function AllPatientsScreen() {
   const navigate = useNavigate();
@@ -85,8 +87,9 @@ export default function AllPatientsScreen() {
     if (!newPatient.name.trim()) {
       newErrors.name = 'Name is required';
     }
-    if (!newPatient.mobile.trim()) {
-      newErrors.mobile = 'Mobile is required';
+    const phoneValidation = validatePhoneNumber(newPatient.mobile);
+    if (!phoneValidation.isValid) {
+      newErrors.mobile = phoneValidation.error || 'Please enter a valid mobile number';
     }
     if (!newPatient.gender) {
       newErrors.gender = 'Gender is required';
@@ -124,7 +127,18 @@ export default function AllPatientsScreen() {
       await loadPatients();
     } catch (error: any) {
       console.error('❌ Failed to create patient:', error);
-      toast.error(error?.message || 'Failed to create patient. Please try again.');
+      
+      // Extract validation errors if present
+      if (hasValidationErrors(error)) {
+        const validationErrors = extractValidationErrors(error);
+        setErrors(prevErrors => ({
+          ...prevErrors,
+          ...validationErrors,
+        }));
+        toast.error(getErrorMessage(error));
+      } else {
+        toast.error(getErrorMessage(error));
+      }
     }
   };
 
@@ -137,14 +151,6 @@ export default function AllPatientsScreen() {
       </div>
     );
   }
-
-  // Debug info
-  console.log('🔍 Render Debug:', {
-    patientsCount: patients.length,
-    filteredCount: filteredPatients.length,
-    loading,
-    searchQuery,
-  });
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden">
@@ -180,13 +186,6 @@ export default function AllPatientsScreen() {
           />
         </div>
 
-        {/* Debug info - remove in production */}
-        {import.meta.env.DEV && (
-          <div className="mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-            <strong>Debug:</strong> Patients: {patients.length}, Filtered: {filteredPatients.length}, Loading: {loading ? 'Yes' : 'No'}
-          </div>
-        )}
-
         {filteredPatients.length > 0 ? (
           <div className="grid gap-3">
             {filteredPatients.map((patient) => (
@@ -196,14 +195,62 @@ export default function AllPatientsScreen() {
                 onClick={() => navigate(`/patient/${patient.id}`)}
               > 
                 <CardContent className="p-3 md:p-5">
-                  <div className="flex items-center gap-3 md:gap-4">
+                  {/* Mobile View - Compact Layout */}
+                  <div className="md:hidden">
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0">
+                        {patient.name.charAt(0).toUpperCase()}
+                      </div>
+                      
+                      {/* Patient Info - 2 Column Grid */}
+                      <div className="flex-1 min-w-0 grid grid-cols-2 gap-x-3 gap-y-1.5">
+                        {/* Name - Full Width */}
+                        <div className="col-span-2">
+                          <h3 className="text-base font-semibold text-gray-900 truncate">
+                            {patient.name}
+                          </h3>
+                        </div>
+                        
+                        {/* Mobile Number */}
+                        <div className="min-w-0">
+                          {patient.mobile ? (
+                            <span className="text-xs text-gray-600 whitespace-nowrap block truncate">📱 {patient.mobile}</span>
+                          ) : (
+                            <span className="text-xs text-gray-400">📱 —</span>
+                          )}
+                        </div>
+                        
+                        {/* Age */}
+                        <div className="min-w-0">
+                          <span className="text-xs text-gray-600 whitespace-nowrap block">
+                            👤 {patient.age !== undefined && patient.age !== null ? `${patient.age} yrs` : 'N/A'}
+                          </span>
+                        </div>
+                        
+                        {/* Gender */}
+                        <div className="col-span-2">
+                          {patient.gender ? (
+                            <span className="text-xs text-gray-600 whitespace-nowrap">
+                              {patient.gender === 'M' ? '♂' : '♀'} {patient.gender === 'M' ? 'Male' : 'Female'}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Desktop View - Column Layout */}
+                  <div className="hidden md:flex items-center gap-4">
                     {/* Avatar */}
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base md:text-lg flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                       {patient.name.charAt(0).toUpperCase()}
                     </div>
                     
                     {/* Column-based layout for desktop */}
-                    <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-[minmax(150px,1fr)_minmax(120px,auto)_minmax(80px,auto)_minmax(100px,auto)] gap-2 md:gap-4 items-center">
+                    <div className="flex-1 min-w-0 grid grid-cols-[minmax(150px,1fr)_minmax(120px,auto)_minmax(80px,auto)_minmax(100px,auto)] gap-4 items-center">
                       {/* Name Column */}
                       <div className="min-w-0">
                         <h3 className="text-lg font-semibold text-gray-900 truncate">
@@ -309,9 +356,9 @@ export default function AllPatientsScreen() {
             label="Mobile *"
             type="tel"
             value={newPatient.mobile}
-            onChange={(e) => setNewPatient({ ...newPatient, mobile: e.target.value.replace(/\D/g, '') })}
+            onChange={(e) => setNewPatient({ ...newPatient, mobile: formatPhoneInput(e.target.value) })}
             error={errors.mobile}
-            placeholder="Enter mobile number"
+            placeholder="Enter mobile number (e.g., +91 9876543210)"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 handleSavePatient();

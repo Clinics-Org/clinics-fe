@@ -4,6 +4,8 @@ import { Input, Button, Modal } from '../components/ui';
 import { patientService } from '../services/patientService';
 import { visitService } from '../services/visitService';
 import type { Patient } from '../types';
+import { validatePhoneNumber, formatPhoneInput } from '../utils/phoneValidation';
+import { extractValidationErrors, getErrorMessage, hasValidationErrors } from '../utils/errorHandler';
 
 export default function PatientSearchScreen() {
   const navigate = useNavigate();
@@ -77,10 +79,9 @@ export default function PatientSearchScreen() {
     if (!newPatient.name.trim()) {
       newErrors.name = 'Name is required';
     }
-    if (!newPatient.mobile.trim()) {
-      newErrors.mobile = 'Mobile is required';
-    } else if (!/^\d{10}$/.test(newPatient.mobile)) {
-      newErrors.mobile = 'Mobile must be 10 digits';
+    const phoneValidation = validatePhoneNumber(newPatient.mobile);
+    if (!phoneValidation.isValid) {
+      newErrors.mobile = phoneValidation.error || 'Please enter a valid mobile number';
     }
     if (newPatient.age && (isNaN(Number(newPatient.age)) || Number(newPatient.age) < 0)) {
       newErrors.age = 'Age must be a valid number';
@@ -109,9 +110,21 @@ export default function PatientSearchScreen() {
       });
       setIsModalOpen(false);
       navigate(`/visit/${visit.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create patient:', error);
-      // You could show an error toast here
+      
+      // Extract validation errors if present
+      if (hasValidationErrors(error)) {
+        const validationErrors = extractValidationErrors(error);
+        setErrors(prevErrors => ({
+          ...prevErrors,
+          ...validationErrors,
+        }));
+        // Show general error message (toast can be added if needed)
+        console.error('Validation errors:', validationErrors);
+      } else {
+        console.error('Error:', getErrorMessage(error));
+      }
     }
   };
 
@@ -222,10 +235,9 @@ export default function PatientSearchScreen() {
             label="Mobile *"
             type="tel"
             value={newPatient.mobile}
-            onChange={(e) => setNewPatient({ ...newPatient, mobile: e.target.value })}
+            onChange={(e) => setNewPatient({ ...newPatient, mobile: formatPhoneInput(e.target.value) })}
             error={errors.mobile}
-            placeholder="Enter 10-digit mobile number"
-            maxLength={10}
+            placeholder="Enter mobile number (e.g., +91 9876543210)"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 handleSavePatient();

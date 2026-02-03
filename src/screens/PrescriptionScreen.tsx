@@ -18,6 +18,7 @@ import { patientService } from '../services/patientService';
 import { toast } from '../utils/toast';
 import { getVisitStep, visitSteps } from '../utils/visitStepper';
 import type { Medicine, Prescription, FollowUp, Visit } from '../types';
+import { extractValidationErrors, getErrorMessage, hasValidationErrors } from '../utils/errorHandler';
 
 export default function PrescriptionScreen() {
   const { visitId } = useParams<{ visitId: string }>();
@@ -35,6 +36,7 @@ export default function PrescriptionScreen() {
   const [existingPrescriptionNotes, setExistingPrescriptionNotes] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [medicineErrors, setMedicineErrors] = useState<Record<string, Record<string, string>>>({});
 
   useEffect(() => {
     const loadVisit = async () => {
@@ -139,10 +141,46 @@ export default function PrescriptionScreen() {
     setMedicines([...medicines, newMedicine]);
   };
 
+  /**
+   * Formats dosage input to "X-Y-Z" format (e.g., "1-0-1")
+   * Only allows digits and automatically inserts dashes
+   */
+  const formatDosage = (value: string): string => {
+    // Remove all non-digit characters
+    const digits = value.replace(/\D/g, '');
+    
+    // Limit to 3 digits
+    const limitedDigits = digits.slice(0, 3);
+    
+    // Format with dashes: X-Y-Z
+    if (limitedDigits.length === 0) return '';
+    if (limitedDigits.length === 1) return limitedDigits;
+    if (limitedDigits.length === 2) return `${limitedDigits[0]}-${limitedDigits[1]}`;
+    return `${limitedDigits[0]}-${limitedDigits[1]}-${limitedDigits[2]}`;
+  };
+
   const handleUpdateMedicine = (id: string, field: keyof Medicine, value: string) => {
+    // Auto-format dosage field
+    const formattedValue = field === 'dosage' ? formatDosage(value) : value;
+    
     setMedicines(
-      medicines.map((med) => (med.id === id ? { ...med, [field]: value } : med))
+      medicines.map((med) => (med.id === id ? { ...med, [field]: formattedValue } : med))
     );
+    // Clear error for this field when user starts typing
+    if (medicineErrors[id]?.[field]) {
+      setMedicineErrors(prev => {
+        const updated = { ...prev };
+        if (updated[id]) {
+          const { [field]: _, ...rest } = updated[id];
+          if (Object.keys(rest).length === 0) {
+            delete updated[id];
+          } else {
+            updated[id] = rest;
+          }
+        }
+        return updated;
+      });
+    }
   };
 
   const handleRemoveMedicine = (id: string) => {
@@ -165,17 +203,54 @@ export default function PrescriptionScreen() {
       return false;
     }
 
-    const success = await prescriptionService.saveToVisit(visitId!, prescription);
-    if (success) {
-      // Reload visit to update stepper and prescription_id
-      const updatedVisit = await visitService.getById(visitId!);
-      if (updatedVisit) {
-        setVisit(updatedVisit);
+    try {
+      const success = await prescriptionService.saveToVisit(visitId!, prescription);
+      if (success) {
+        // Reload visit to update stepper and prescription_id
+        const updatedVisit = await visitService.getById(visitId!);
+        if (updatedVisit) {
+          setVisit(updatedVisit);
+        }
+        toast.success('Prescription saved');
+        return true;
+      } else {
+        toast.error('Failed to save prescription');
+        return false;
       }
-      toast.success('Prescription saved');
-      return true;
-    } else {
-      toast.error('Failed to save prescription');
+    } catch (error: any) {
+      console.error('❌ Failed to save prescription:', error);
+      
+      // Extract validation errors if present
+      if (hasValidationErrors(error)) {
+        const validationErrors = extractValidationErrors(error);
+        
+        // Process medicine-specific errors (format: medicine_0_notes, medicine_1_dosage, etc.)
+        const newMedicineErrors: Record<string, Record<string, string>> = {};
+        
+        Object.entries(validationErrors).forEach(([key, message]) => {
+          const medicineMatch = key.match(/^medicine_(\d+)_(.+)$/);
+          if (medicineMatch) {
+            const index = parseInt(medicineMatch[1], 10);
+            const fieldName = medicineMatch[2];
+            
+            // Find the medicine ID at this index
+            if (medicines[index]) {
+              const medicineId = medicines[index].id;
+              if (!newMedicineErrors[medicineId]) {
+                newMedicineErrors[medicineId] = {};
+              }
+              newMedicineErrors[medicineId][fieldName] = message;
+            }
+          }
+        });
+        
+        setMedicineErrors(newMedicineErrors);
+        toast.error(getErrorMessage(error));
+        console.error('Validation errors:', validationErrors);
+      } else {
+        setMedicineErrors({});
+        toast.error(getErrorMessage(error));
+      }
       return false;
     }
   };
@@ -373,16 +448,21 @@ export default function PrescriptionScreen() {
                         }
                         placeholder="Search medication..."
                         className="w-full"
+                        error={medicineErrors[medicine.id]?.medicine || medicineErrors[medicine.id]?.name}
                       />
                       <div className="grid grid-cols-2 gap-3">
                         <Input
                           label="Dosage"
+                          type="text"
+                          inputMode="numeric"
                           value={medicine.dosage}
                           onChange={(e) =>
                             handleUpdateMedicine(medicine.id, 'dosage', e.target.value)
                           }
                           placeholder="e.g., 1-0-1"
                           className="w-full"
+                          error={medicineErrors[medicine.id]?.dosage}
+                          maxLength={5}
                         />
                         <Input
                           label="Duration"
@@ -392,6 +472,7 @@ export default function PrescriptionScreen() {
                           }
                           placeholder="e.g., 5 days"
                           className="w-full"
+                          error={medicineErrors[medicine.id]?.duration}
                         />
                       </div>
                       <NotesInput
@@ -402,6 +483,7 @@ export default function PrescriptionScreen() {
                         }
                         placeholder="Select or type notes (e.g., before food, after food)"
                         className="w-full"
+                        error={medicineErrors[medicine.id]?.notes}
                       />
                     </div>
                   ))}
@@ -430,16 +512,21 @@ export default function PrescriptionScreen() {
                               }
                               placeholder="Search medication..."
                               className="w-full"
+                              error={medicineErrors[medicine.id]?.medicine || medicineErrors[medicine.id]?.name}
                             />
                           </TableCell>
                           <TableCell className="min-w-[180px]">
                             <Input
+                              type="text"
+                              inputMode="numeric"
                               value={medicine.dosage}
                               onChange={(e) =>
                                 handleUpdateMedicine(medicine.id, 'dosage', e.target.value)
                               }
                               placeholder="e.g., 1-0-1"
                               className="w-full"
+                              error={medicineErrors[medicine.id]?.dosage}
+                              maxLength={5}
                             />
                           </TableCell>
                           <TableCell className="min-w-[180px]">
@@ -450,6 +537,7 @@ export default function PrescriptionScreen() {
                               }
                               placeholder="e.g., 5 days"
                               className="w-full"
+                              error={medicineErrors[medicine.id]?.duration}
                             />
                           </TableCell>
                           <TableCell className="min-w-[200px]">
@@ -460,6 +548,7 @@ export default function PrescriptionScreen() {
                               }
                               placeholder="Select or type notes"
                               className="w-full"
+                              error={medicineErrors[medicine.id]?.notes}
                             />
                           </TableCell>
                           <TableCell>

@@ -31,7 +31,7 @@ export const appointmentService = {
 
   /**
    * Get all appointments for a clinic
-   * GET /api/appointments/clinic/{clinic_id}?date=DD-MM-YYYY&doctor_id=uuid&page=1&page_size=20
+   * GET /api/appointments/all/appointments?date=DD-MM-YYYY&doctor_id=uuid&page=1&page_size=20
    */
   async getAllAppointments(
     page: number = 1,
@@ -40,9 +40,6 @@ export const appointmentService = {
     doctorId?: string
   ): Promise<{ appointments: Appointment[]; count: number; next: string | null; previous: string | null }> {
     try {
-      const { clinicService } = await import('./clinicService');
-      const clinicId = clinicService.getClinicId();
-
       const params: Record<string, string | number> = {
         page,
         page_size: pageSize,
@@ -59,7 +56,7 @@ export const appointmentService = {
         params.doctor_id = doctorId;
       }
 
-      const response = await apiClient.get<any>(`/appointments/clinic/${clinicId}`, params);
+      const response = await apiClient.get<any>(`/appointments/all/appointments`, params);
 
       if (!response.success || !response.data) {
         console.error('❌ Failed to get all appointments:', response.error);
@@ -100,14 +97,11 @@ export const appointmentService = {
     source?: string;
   }): Promise<Appointment> {
     try {
-      const { clinicService } = await import('./clinicService');
-      const clinicId = clinicService.getClinicId();
-
+      // Backend will get clinic_id from cookie
       const apiRequestData = {
         name: appointmentData.name,
         mobile_number: appointmentData.mobile_number,
         gender: appointmentData.gender,
-        clinic_id: clinicId,
         doctor_id: appointmentData.doctor_id,
         appointment_date_time: appointmentData.appointment_date_time,
         appointment_status: appointmentData.appointment_status || 'WAITING',
@@ -120,7 +114,11 @@ export const appointmentService = {
 
       if (!response.success || !response.data) {
         console.error('❌ Failed to create appointment:', response.error);
-        throw new Error(response.error?.message || 'Failed to create appointment');
+        // Create error object with details for validation errors
+        const error: any = new Error(response.error?.message || 'Failed to create appointment');
+        error.code = response.error?.code;
+        error.details = response.error?.details;
+        throw error;
       }
 
       const mappedAppointment = this.mapApiAppointmentToAppointment(response.data);

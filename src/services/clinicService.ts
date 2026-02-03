@@ -4,7 +4,7 @@ import { apiClient } from './apiClient';
 import type { Clinic } from '../types';
 
 // clinic ID as per requirements
-const CLINIC_ID = '92c7233d-212c-4a5a-85f3-02994d99eee4';
+const CLINIC_ID = '1beae540-0651-4ebe-8d65-7434c596de9f';
 
 export const clinicService = {
   /**
@@ -15,13 +15,12 @@ export const clinicService = {
   },
 
   /**
-   * Get clinic by ID
-   * GET /api/clinics/{id}
+   * Get current clinic
+   * GET /api/clinic (uses current_clinic_id from cookie)
    */
-  async getById(id?: string): Promise<Clinic | null> {
+  async getCurrentClinic(): Promise<Clinic | null> {
     try {
-      const clinicId = id || CLINIC_ID;
-      const response = await apiClient.get<Clinic>(`/clinics/${clinicId}`);
+      const response = await apiClient.get<Clinic>('/clinic');
 
       if (!response.success || !response.data) {
         console.error('Failed to fetch clinic:', response.error?.message);
@@ -36,17 +35,19 @@ export const clinicService = {
   },
 
   /**
-   * Get current clinic (uses hardcoded ID)
+   * Get clinic by ID (deprecated - use getCurrentClinic instead)
+   * @deprecated Use getCurrentClinic() instead
    */
-  async getCurrentClinic(): Promise<Clinic | null> {
-    return this.getById(CLINIC_ID);
+  async getById(_id?: string): Promise<Clinic | null> {
+    // For backward compatibility, use getCurrentClinic
+    return this.getCurrentClinic();
   },
 
   /**
    * Get clinic statistics
-   * GET /api/clinic-stats/{clinic_id}?date_range=[DD-MM-YYYY,DD-MM-YYYY]
+   * GET /api/clinic-stats?date_range=[DD-MM-YYYY,DD-MM-YYYY]
    */
-  async getStats(clinicId?: string, dateRange?: { start: string; end: string }): Promise<{
+  async getStats(_clinicId?: string, dateRange?: { start: string; end: string }): Promise<{
     total_patients: number;
     total_visits: number;
     total_completed_visits: number;
@@ -56,7 +57,6 @@ export const clinicService = {
     total_pending_appointments: number;
   } | null> {
     try {
-      const id = clinicId || CLINIC_ID;
       const params: Record<string, string> = {};
       
       // Format date range as [DD-MM-YYYY,DD-MM-YYYY]
@@ -72,7 +72,8 @@ export const clinicService = {
         params.date_range = `[${startFormatted},${endFormatted}]`;
       }
       
-      const response = await apiClient.get<any>(`/clinic-stats/${id}`, params);
+      // Backend will get clinic_id from cookie
+      const response = await apiClient.get<any>(`/clinic-stats`, params);
 
       if (!response.success || !response.data) {
         console.error('Failed to fetch clinic stats:', response.error?.message);
