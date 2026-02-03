@@ -36,7 +36,6 @@ const FIELD_NAME_MAP: Record<string, string> = {
   notes: 'notes',
   prescription_items: 'medicines',
   medicine: 'medicine', // API field name for medicine name
-  name: 'name', // Alternative field name
   dosage: 'dosage',
   duration: 'duration',
   

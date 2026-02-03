@@ -138,7 +138,7 @@ export const patientService = {
    * Get all patients for a clinic
    * GET /api/patients/all
    */
-  async getAll(clinicId?: string): Promise<PatientSearchResult[]> {
+  async getAll(_clinicId?: string): Promise<PatientSearchResult[]> {
     try {
       console.log('Fetching all patients...');
       
