@@ -7,6 +7,8 @@ import { visitService } from '../services/visitService';
 import { toast } from '../utils/toast';
 import type { Patient, Visit, ClinicDoctor } from '../types';
 import { clinicService } from '../services/clinicService';
+import { validatePhoneNumber, formatPhoneInput } from '../utils/phoneValidation';
+import { extractValidationErrors, getErrorMessage, hasValidationErrors } from '../utils/errorHandler';
 
 export default function VisitsScreen() {
   const navigate = useNavigate();
@@ -145,8 +147,9 @@ export default function VisitsScreen() {
   };
 
   const handleSearchPatient = async () => {
-    if (!mobileNumber.trim()) {
-      setErrors({ mobile: 'Please enter a mobile number' });
+    const phoneValidation = validatePhoneNumber(mobileNumber);
+    if (!phoneValidation.isValid) {
+      setErrors({ mobile: phoneValidation.error || 'Please enter a valid mobile number' });
       return;
     }
 
@@ -194,8 +197,9 @@ export default function VisitsScreen() {
     if (!newPatient.name.trim()) {
       newErrors.name = 'Name is required';
     }
-    if (!newPatient.mobile.trim()) {
-      newErrors.mobile = 'Mobile is required';
+    const phoneValidation = validatePhoneNumber(newPatient.mobile);
+    if (!phoneValidation.isValid) {
+      newErrors.mobile = phoneValidation.error || 'Please enter a valid mobile number';
     }
     if (!newPatient.gender) {
       newErrors.gender = 'Gender is required';
@@ -263,7 +267,26 @@ export default function VisitsScreen() {
       navigate(`/visit/${visit.id}`);
     } catch (error: any) {
       console.error('❌ Failed to create visit:', error);
-      toast.error(error?.message || 'Failed to create visit');
+      
+      // Extract validation errors if present
+      if (hasValidationErrors(error)) {
+        const validationErrors = extractValidationErrors(error);
+        setErrors(prevErrors => ({
+          ...prevErrors,
+          ...validationErrors,
+        }));
+        
+        // Also set doctor error if present
+        if (validationErrors.doctor || validationErrors.doctor_id) {
+          setDoctorError(validationErrors.doctor || validationErrors.doctor_id || '');
+        }
+        
+        // Show general error message
+        toast.error(getErrorMessage(error));
+      } else {
+        // Show general error message
+        toast.error(getErrorMessage(error));
+      }
     }
   };
 
@@ -489,11 +512,11 @@ export default function VisitsScreen() {
                 type="tel"
                 value={mobileNumber}
                 onChange={(e) => {
-                  setMobileNumber(e.target.value.replace(/\D/g, ''));
+                  setMobileNumber(formatPhoneInput(e.target.value));
                   setErrors({});
                 }}
                 error={errors.mobile}
-                placeholder="Enter mobile number"
+                placeholder="Enter mobile number (e.g., +91 9876543210)"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && mobileNumber.trim()) {
@@ -530,9 +553,9 @@ export default function VisitsScreen() {
                 label="Mobile *"
                 type="tel"
                 value={newPatient.mobile}
-                onChange={(e) => setNewPatient({ ...newPatient, mobile: e.target.value.replace(/\D/g, '') })}
+                onChange={(e) => setNewPatient({ ...newPatient, mobile: formatPhoneInput(e.target.value) })}
                 error={errors.mobile}
-                placeholder="Enter mobile number"
+                placeholder="Enter mobile number (e.g., +91 9876543210)"
                 disabled={!!foundPatient}
               />
               

@@ -6,6 +6,8 @@ import { patientService } from '../services/patientService';
 import { toast } from '../utils/toast';
 import type { Appointment, ClinicDoctor, Patient } from '../types';
 import { clinicService } from '../services/clinicService';
+import { validatePhoneNumber, formatPhoneInput } from '../utils/phoneValidation';
+import { extractValidationErrors, getErrorMessage, hasValidationErrors } from '../utils/errorHandler';
 
 export default function AppointmentsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -128,8 +130,9 @@ export default function AppointmentsScreen() {
   };
 
   const handleSearchPatient = async () => {
-    if (!mobileNumber.trim()) {
-      setErrors({ mobile: 'Please enter a mobile number' });
+    const phoneValidation = validatePhoneNumber(mobileNumber);
+    if (!phoneValidation.isValid) {
+      setErrors({ mobile: phoneValidation.error || 'Please enter a valid mobile number' });
       return;
     }
 
@@ -176,8 +179,9 @@ export default function AppointmentsScreen() {
     if (!newPatient.name.trim()) {
       newErrors.name = 'Name is required';
     }
-    if (!newPatient.mobile.trim()) {
-      newErrors.mobile = 'Mobile is required';
+    const phoneValidation = validatePhoneNumber(newPatient.mobile);
+    if (!phoneValidation.isValid) {
+      newErrors.mobile = phoneValidation.error || 'Please enter a valid mobile number';
     }
     if (!newPatient.gender) {
       newErrors.gender = 'Gender is required';
@@ -248,7 +252,28 @@ export default function AppointmentsScreen() {
       await loadAppointments();
     } catch (error: any) {
       console.error('❌ Failed to create appointment:', error);
-      toast.error(error?.message || 'Failed to create appointment');
+      
+      // Extract validation errors if present
+      if (hasValidationErrors(error)) {
+        const validationErrors = extractValidationErrors(error);
+        
+        // Set form field errors
+        setErrors(prevErrors => ({
+          ...prevErrors,
+          ...validationErrors,
+        }));
+        
+        // Also set doctor error if present (for doctor select field)
+        if (validationErrors.doctor) {
+          setDoctorError(validationErrors.doctor);
+        }
+        
+        // Show general error message
+        toast.error(getErrorMessage(error));
+      } else {
+        // Show general error message
+        toast.error(getErrorMessage(error));
+      }
     }
   };
 
@@ -549,11 +574,11 @@ export default function AppointmentsScreen() {
                 type="tel"
                 value={mobileNumber}
                 onChange={(e) => {
-                  setMobileNumber(e.target.value.replace(/\D/g, ''));
+                  setMobileNumber(formatPhoneInput(e.target.value));
                   setErrors({});
                 }}
                 error={errors.mobile}
-                placeholder="Enter mobile number"
+                placeholder="Enter mobile number (e.g., +91 9876543210)"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && mobileNumber.trim()) {
@@ -590,9 +615,9 @@ export default function AppointmentsScreen() {
                 label="Mobile *"
                 type="tel"
                 value={newPatient.mobile}
-                onChange={(e) => setNewPatient({ ...newPatient, mobile: e.target.value.replace(/\D/g, '') })}
+                onChange={(e) => setNewPatient({ ...newPatient, mobile: formatPhoneInput(e.target.value) })}
                 error={errors.mobile}
-                placeholder="Enter mobile number"
+                placeholder="Enter mobile number (e.g., +91 9876543210)"
                 disabled={!!foundPatient}
               />
               
@@ -645,6 +670,7 @@ export default function AppointmentsScreen() {
                     }}
                     placeholder="Select doctor"
                     className="w-full"
+                    error={doctorError}
                   >
                     {doctors.map((doc) => (
                       <SelectItem key={doc.id} value={doc.id}>
@@ -652,9 +678,6 @@ export default function AppointmentsScreen() {
                       </SelectItem>
                     ))}
                   </Select>
-                  {doctorError && (
-                    <p className="mt-1 text-sm text-red-600">{doctorError}</p>
-                  )}
                 </div>
               )}
 
@@ -670,7 +693,11 @@ export default function AppointmentsScreen() {
                     setAppointmentDateTime(e.target.value);
                     setErrors({ ...errors, appointmentDateTime: '' });
                   }}
-                  className="flex h-10 w-full rounded-md border border-teal-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+                  className={`flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                    errors.appointmentDateTime
+                      ? 'border-red-500 focus-visible:ring-red-500'
+                      : 'border-teal-300 focus-visible:ring-teal-500'
+                  }`}
                   min={new Date().toISOString().slice(0, 16)}
                 />
                 {errors.appointmentDateTime && (

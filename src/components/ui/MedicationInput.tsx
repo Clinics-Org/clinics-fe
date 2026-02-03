@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import * as Popover from '@radix-ui/react-popover';
 import { Input } from './Input';
 import { medicationService, type Medication } from '../../services/medicationService';
 import { cn } from '../../utils/cn';
@@ -25,35 +25,18 @@ export function MedicationInput({
 }: MedicationInputProps) {
   const [searchQuery, setSearchQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<Medication[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   
   const inputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Update dropdown position
-  const updateDropdownPosition = useCallback(() => {
-    if (!inputRef.current || !containerRef.current) return;
-
-    const inputRect = inputRef.current.getBoundingClientRect();
-    const containerRect = containerRef.current.getBoundingClientRect();
-    
-    setDropdownPosition({
-      top: inputRect.bottom + window.scrollY + 4,
-      left: containerRect.left + window.scrollX,
-      width: containerRect.width,
-    });
-  }, []);
 
   // Debounced search function
   const performSearch = useCallback(async (query: string) => {
     if (query.trim().length < 2) {
       setSuggestions([]);
-      setShowSuggestions(false);
+      setOpen(false);
       return;
     }
 
@@ -62,23 +45,19 @@ export function MedicationInput({
       const results = await medicationService.search(query);
       setSuggestions(results);
       if (results.length > 0) {
-        setShowSuggestions(true);
-        // Use setTimeout to ensure DOM is ready
-        setTimeout(() => {
-          updateDropdownPosition();
-        }, 0);
+        setOpen(true);
       } else {
-        setShowSuggestions(false);
+        setOpen(false);
       }
       setSelectedIndex(-1);
     } catch (error) {
       console.error('Error searching medications:', error);
       setSuggestions([]);
-      setShowSuggestions(false);
+      setOpen(false);
     } finally {
       setLoading(false);
     }
-  }, [updateDropdownPosition]);
+  }, []);
 
   // Handle input change with debouncing
   const handleInputChange = (newValue: string) => {
@@ -100,17 +79,16 @@ export function MedicationInput({
   const handleSelectMedication = (medication: Medication) => {
     setSearchQuery(medication.full_name);
     onChange(medication.full_name);
-    setShowSuggestions(false);
+    setOpen(false);
     setSuggestions([]);
-    setDropdownPosition(null);
     inputRef.current?.blur();
   };
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showSuggestions || suggestions.length === 0) {
+    if (!open || suggestions.length === 0) {
       if (e.key === 'Escape') {
-        setShowSuggestions(false);
+        setOpen(false);
       }
       return;
     }
@@ -133,47 +111,10 @@ export function MedicationInput({
         }
         break;
       case 'Escape':
-        setShowSuggestions(false);
+        setOpen(false);
         break;
     }
   };
-
-  // Update position on scroll and resize
-  useEffect(() => {
-    if (!showSuggestions) return;
-
-    const handleUpdatePosition = () => {
-      updateDropdownPosition();
-    };
-
-    window.addEventListener('scroll', handleUpdatePosition, true);
-    window.addEventListener('resize', handleUpdatePosition);
-    
-    return () => {
-      window.removeEventListener('scroll', handleUpdatePosition, true);
-      window.removeEventListener('resize', handleUpdatePosition);
-    };
-  }, [showSuggestions, updateDropdownPosition]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
-        setShowSuggestions(false);
-        setDropdownPosition(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   // Sync value prop with searchQuery
   useEffect(() => {
@@ -192,65 +133,65 @@ export function MedicationInput({
   }, []);
 
   return (
-    <div ref={containerRef} className={cn('relative', className)}>
-      <div className="relative">
-        <Input
-          ref={inputRef}
-          label={label}
-          value={searchQuery}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onFocus={() => {
-            if (suggestions.length > 0) {
-              setShowSuggestions(true);
-              updateDropdownPosition();
-            }
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          error={error}
-          disabled={disabled}
-          className="w-full"
-        />
-        {/* Loading indicator */}
-        {loading && (
-          <div className="absolute right-3 top-[2.5rem] text-gray-400">
-            <svg
-              className="animate-spin h-4 w-4"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
+    <Popover.Root open={open && suggestions.length > 0} onOpenChange={setOpen}>
+      <div className={cn('relative', className)}>
+        <Popover.Anchor asChild>
+          <div className="relative">
+            <Input
+              ref={inputRef}
+              label={label}
+              value={searchQuery}
+              onChange={(e) => handleInputChange(e.target.value)}
+              onFocus={() => {
+                if (suggestions.length > 0) {
+                  setOpen(true);
+                }
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              error={error}
+              disabled={disabled}
+              className="w-full"
+            />
+            {/* Loading indicator */}
+            {loading && (
+              <div className="absolute right-3 top-[2.5rem] text-gray-400">
+                <svg
+                  className="animate-spin h-4 w-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </Popover.Anchor>
 
-      {/* Suggestions dropdown - rendered in portal */}
-      {showSuggestions && suggestions.length > 0 && dropdownPosition && typeof document !== 'undefined' && (
-        createPortal(
-          <div
-            ref={dropdownRef}
-            style={{
-              position: 'fixed',
-              top: dropdownPosition.top,
-              left: dropdownPosition.left,
-              width: dropdownPosition.width,
-              zIndex: 9999,
-            }}
-            className="bg-white border border-teal-200 rounded-md shadow-lg max-h-60 overflow-auto"
+        <Popover.Portal>
+          <Popover.Content
+            className={cn(
+              'z-[9999] w-[var(--radix-popover-trigger-width)] max-h-60 overflow-auto rounded-md border border-teal-200 bg-white shadow-lg',
+              'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+              'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2',
+              'data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2'
+            )}
+            align="start"
+            sideOffset={4}
+            collisionPadding={8}
           >
             {suggestions.map((medication, index) => (
               <div
@@ -271,10 +212,9 @@ export function MedicationInput({
                 )}
               </div>
             ))}
-          </div>,
-          document.body
-        )
-      )}
-    </div>
+          </Popover.Content>
+        </Popover.Portal>
+      </div>
+    </Popover.Root>
   );
 }

@@ -8,28 +8,33 @@ export interface SelectProps {
   placeholder?: string;
   children: React.ReactNode;
   className?: string;
+  error?: string;
 }
 
 const Select = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
   SelectProps
->(({ value, onValueChange, placeholder, children, className, ...props }, ref) => {
+>(({ value, onValueChange, placeholder, children, className, error, ...props }, ref) => {
   return (
-    <SelectPrimitive.Root 
-      value={value || undefined} 
-      onValueChange={onValueChange} 
-      {...props}
-    >
-      <SelectPrimitive.Trigger
-        ref={ref}
-        className={cn(
-          'flex h-10 w-full items-center justify-between rounded-md border border-teal-300 bg-white px-3 py-2 text-sm',
-          'ring-offset-white placeholder:text-gray-400',
-          'focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2',
-          'disabled:cursor-not-allowed disabled:opacity-50',
-          className
-        )}
+    <div className="w-full">
+      <SelectPrimitive.Root 
+        value={value || undefined} 
+        onValueChange={onValueChange} 
+        {...props}
       >
+        <SelectPrimitive.Trigger
+          ref={ref}
+          className={cn(
+            'flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 py-2 text-sm',
+            'ring-offset-white placeholder:text-gray-400',
+            'focus:outline-none focus:ring-2 focus:ring-offset-2',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            error 
+              ? 'border-red-500 focus:ring-red-500' 
+              : 'border-teal-300 focus:ring-teal-500',
+            className
+          )}
+        >
         <SelectPrimitive.Value placeholder={placeholder} />
         <SelectPrimitive.Icon className="h-4 w-4 opacity-50">
           <svg
@@ -62,6 +67,10 @@ const Select = React.forwardRef<
         </SelectPrimitive.Content>
       </SelectPrimitive.Portal>
     </SelectPrimitive.Root>
+    {error && (
+      <p className="mt-1 text-sm text-red-600">{error}</p>
+    )}
+    </div>
   );
 });
 Select.displayName = 'Select';

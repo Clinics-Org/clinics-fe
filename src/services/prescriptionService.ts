@@ -60,7 +60,7 @@ export const prescriptionService = {
           medicine: med.name,
           dosage: med.dosage,
           duration: med.duration,
-          notes: med.notes || null,
+          notes: med.notes && med.notes.trim() !== '' ? med.notes.trim() : '', // Ensure notes is always a string, not null
         })),
     };
   },
@@ -99,14 +99,18 @@ export const prescriptionService = {
 
       if (!response.success || !response.data) {
         console.error('❌ Failed to create prescription:', response.error);
-        return null;
+        // Create error object with details for validation errors
+        const error: any = new Error(response.error?.message || 'Failed to create prescription');
+        error.code = response.error?.code;
+        error.details = response.error?.details;
+        throw error;
       }
 
       console.log('✅ Prescription created successfully:', response.data.id);
       return response.data.id; // Return prescription ID
     } catch (error: any) {
       console.error('❌ Error creating prescription:', error);
-      return null;
+      throw error; // Re-throw to allow error handling in UI
     }
   },
 
@@ -124,14 +128,18 @@ export const prescriptionService = {
 
       if (!response.success) {
         console.error('❌ Failed to update prescription:', response.error);
-        return false;
+        // Create error object with details for validation errors
+        const error: any = new Error(response.error?.message || 'Failed to update prescription');
+        error.code = response.error?.code;
+        error.details = response.error?.details;
+        throw error;
       }
 
       console.log('✅ Prescription updated successfully');
       return true;
     } catch (error: any) {
       console.error('❌ Error updating prescription:', error);
-      return false;
+      throw error; // Re-throw to allow error handling in UI
     }
   },
 

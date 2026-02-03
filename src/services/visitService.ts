@@ -40,10 +40,6 @@ export const visitService = {
     doctorId?: string;
   }): Promise<Visit> {
     try {
-      // Get clinic ID
-      const { clinicService } = await import('./clinicService');
-      const clinicId = clinicService.getClinicId();
-
       // Map status to API format
       const visitStatusMap: Record<string, 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'> = {
         'waiting': 'WAITING',
@@ -55,9 +51,9 @@ export const visitService = {
       // Prefer doctorId passed from caller; fall back to legacy hardcoded ID for safety
       const doctorId = visitData.doctorId || '948cfcaf-5295-431c-b531-76ff875b2dae';
 
+      // Backend will get clinic_id from cookie
       const apiRequestData = {
         patient_id: visitData.patientId,
-        clinic_id: clinicId,
         doctor_id: doctorId,
         visit_reason: visitData.visitReason || 'General consultation',
         visit_status: visitStatus,
@@ -69,7 +65,11 @@ export const visitService = {
 
       if (!response.success || !response.data) {
         console.error('❌ Failed to create visit:', response.error);
-        throw new Error(response.error?.message || 'Failed to create visit');
+        // Create error object with details for validation errors
+        const error: any = new Error(response.error?.message || 'Failed to create visit');
+        error.code = response.error?.code;
+        error.details = response.error?.details;
+        throw error;
       }
 
       const apiVisit = response.data;
@@ -241,7 +241,7 @@ export const visitService = {
 
   /**
    * Get all visits for a clinic
-   * GET /api/visits/{clinic_id}/get-all/?page=1&page_size=20&date=DD-MM-YYYY&visit_status=WAITING&doctor_id=uuid
+   * GET /api/visits/all/visit?page=1&page_size=20&date=DD-MM-YYYY&visit_status=WAITING&doctor_id=uuid
    */
   async getAllVisits(
     page: number = 1, 
@@ -251,9 +251,6 @@ export const visitService = {
     doctorId?: string
   ): Promise<{ visits: Visit[]; count: number; next: string | null; previous: string | null }> {
     try {
-      const { clinicService } = await import('./clinicService');
-      const clinicId = clinicService.getClinicId();
-
       const params: Record<string, string | number> = {
         page,
         page_size: pageSize,
@@ -277,7 +274,7 @@ export const visitService = {
         params.doctor_id = doctorId;
       }
 
-      const response = await apiClient.get<any>(`/visits/${clinicId}/get-all/`, params);
+      const response = await apiClient.get<any>(`/visits/all/visits`, params);
 
       if (!response.success || !response.data) {
         console.error('❌ Failed to get all visits:', response.error);
