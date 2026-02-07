@@ -2,7 +2,7 @@
  * Utility functions for handling API validation errors
  */
 
-import type { ApiError } from '../services/apiClient';
+import type { ApiError } from '../api/client';
 
 /**
  * Maps API field names to form field names

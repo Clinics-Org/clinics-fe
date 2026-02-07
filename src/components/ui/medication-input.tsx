@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Popover } from '@base-ui/react/popover';
+import { Popover } from '@/components/ui/popover';
 import { Input } from './input';
-import {
-  medicationService,
-  type Medication,
-} from '../../services/medicationService';
+import { medicationService, type Medication } from '../../api/medications.api';
 import { cn } from '@/lib/utils';
 
 export interface MedicationInputProps {
@@ -138,7 +135,7 @@ export function MedicationInput({
   return (
     <Popover.Root open={open && suggestions.length > 0} onOpenChange={setOpen}>
       <div className={cn('relative', className)}>
-        <Popover.Arrow
+        <Popover.Trigger
           render={
             <div className="relative">
               <label>
@@ -187,40 +184,38 @@ export function MedicationInput({
           }
         />
 
-        <Popover.Portal>
-          <Popover.Positioner align="start" sideOffset={4} collisionPadding={8}>
-            <Popover.Popup
+        <Popover.Popup
+          align="start"
+          sideOffset={4}
+          className={cn(
+            'z-[9999] w-[var(--radix-popover-trigger-width)] max-h-60 overflow-auto rounded-md border border-teal-200 bg-white shadow-lg',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+            'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2',
+            'data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
+          )}
+        >
+          {suggestions.map((medication, index) => (
+            <div
+              key={medication.id}
+              onClick={() => handleSelectMedication(medication)}
               className={cn(
-                'z-[9999] w-[var(--radix-popover-trigger-width)] max-h-60 overflow-auto rounded-md border border-teal-200 bg-white shadow-lg',
-                'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-                'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2',
-                'data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
+                'px-4 py-3 cursor-pointer hover:bg-teal-50 transition-colors',
+                index === selectedIndex && 'bg-teal-50',
+                index === 0 && 'rounded-t-md',
+                index === suggestions.length - 1 && 'rounded-b-md',
               )}
             >
-              {suggestions.map((medication, index) => (
-                <div
-                  key={medication.id}
-                  onClick={() => handleSelectMedication(medication)}
-                  className={cn(
-                    'px-4 py-3 cursor-pointer hover:bg-teal-50 transition-colors',
-                    index === selectedIndex && 'bg-teal-50',
-                    index === 0 && 'rounded-t-md',
-                    index === suggestions.length - 1 && 'rounded-b-md',
-                  )}
-                >
-                  <div className="font-medium text-gray-900">
-                    {medication.full_name}
-                  </div>
-                  {medication.manufacturer && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      {medication.manufacturer}
-                    </div>
-                  )}
+              <div className="font-medium text-gray-900">
+                {medication.full_name}
+              </div>
+              {medication.manufacturer && (
+                <div className="text-xs text-gray-500 mt-1">
+                  {medication.manufacturer}
                 </div>
-              ))}
-            </Popover.Popup>
-          </Popover.Positioner>
-        </Popover.Portal>
+              )}
+            </div>
+          ))}
+        </Popover.Popup>
       </div>
     </Popover.Root>
   );

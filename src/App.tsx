@@ -1,21 +1,21 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import AppLayout from './components/layout/AppLayout';
-import ProtectedRoute from './components/ProtectedRoute';
-import LoginScreen from './screens/LoginScreen';
-import HomeScreen from './screens/HomeScreen';
-import AllPatientsScreen from './screens/AllPatientsScreen';
-import PatientDetailsScreen from './screens/PatientDetailsScreen';
-import VisitsScreen from './screens/VisitsScreen';
-import VisitContextScreen from './screens/VisitContextScreen';
-import ConsultationScreen from './screens/ConsultationScreen';
-import PrescriptionScreen from './screens/PrescriptionScreen';
-import PrintPreviewScreen from './screens/PrintPreviewScreen';
-import SettingsScreen from './screens/SettingsScreen';
-import AppointmentsScreen from './screens/AppointmentsScreen';
-import { authService } from './services/authService';
-import { ToastProvider } from './components/ui/toast';
+import AppLayout from '@/components/layout/AppLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import LoginScreen from '@/screens/Login';
+import HomeScreen from '@/screens/Dashboard';
+import AllPatientsScreen from '@/screens/AllPatients';
+import PatientDetailsScreen from '@/screens/PatientDetails';
+import VisitsScreen from '@/screens/Visits';
+import VisitContextScreen from '@/screens/VisitContext';
+import ConsultationScreen from '@/screens/Consultation';
+import PrescriptionScreen from '@/screens/Prescription';
+import PrintPreviewScreen from '@/screens/PrintPreview';
+import SettingsScreen from '@/screens/Settings';
+import AppointmentsScreen from '@/screens/Appointments';
+import { useAuthStore } from '@/stores/auth.store';
 
 function App() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   return (
     <BrowserRouter>
       <Routes>
@@ -23,11 +23,7 @@ function App() {
         <Route
           path="/login"
           element={
-            authService.isAuthenticated() ? (
-              <Navigate to="/" replace />
-            ) : (
-              <LoginScreen />
-            )
+            isAuthenticated ? <Navigate to="/" replace /> : <LoginScreen />
           }
         />
 
@@ -68,7 +64,6 @@ function App() {
                   <Route path="/settings" element={<SettingsScreen />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-                <ToastProvider />
               </AppLayout>
             </ProtectedRoute>
           }
