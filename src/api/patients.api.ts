@@ -1,7 +1,7 @@
 // Patient service - Uses API format as per API_SPECIFICATION.md
 // Currently uses mock API client (localStorage), ready for backend integration
 
-import { apiClient } from './apiClient';
+import { apiClient } from './client';
 import type { Patient } from '../types';
 
 export interface PatientSearchResult extends Patient {

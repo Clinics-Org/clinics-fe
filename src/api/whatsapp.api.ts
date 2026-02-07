@@ -1,7 +1,7 @@
 // WhatsApp service - Uses API format as per API_SPECIFICATION.md
 // Currently uses mock API client, ready for backend integration
 
-import { apiClient } from './apiClient';
+import { apiClient } from './client';
 import type { Prescription } from '../types';
 
 export interface WhatsAppResponse {

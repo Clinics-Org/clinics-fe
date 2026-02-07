@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { patientService } from '../services/patientService';
-import type { Patient } from '../types';
+import { useAllPatients, useCreatePatient } from '../queries/patients.queries';
+import { useFiltersStore } from '../stores/filters.store';
 import {
   validatePhoneNumber,
   formatPhoneInput,
@@ -20,10 +20,10 @@ import { toast } from '@/components/ui/toast';
 
 export default function AllPatientsScreen() {
   const navigate = useNavigate();
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  const { data: patients = [], isLoading } = useAllPatients();
+  const createPatientMutation = useCreatePatient();
+  const patientSearch = useFiltersStore((state) => state.patientSearch);
+  const setPatientSearch = useFiltersStore((state) => state.setPatientSearch);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPatient, setNewPatient] = useState({
     name: '',
@@ -33,64 +33,18 @@ export default function AllPatientsScreen() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    loadPatients();
-  }, []);
-
-  useEffect(() => {
-    const filterPatients = () => {
-      let filtered = [...patients];
-
-      // Apply search filter only
-      if (searchQuery.trim() !== '') {
-        const query = searchQuery.toLowerCase();
-        filtered = filtered.filter(
-          (patient) =>
-            patient.name.toLowerCase().includes(query) ||
-            patient.mobile.includes(searchQuery),
-        );
-      }
-
-      setFilteredPatients(filtered);
-    };
-
-    filterPatients();
-  }, [searchQuery, patients]);
-
-  const loadPatients = async () => {
-    try {
-      setLoading(true);
-      console.log('🔄 Loading patients...');
-      const allPatients = await patientService.getAll();
-      console.log('📊 Patients loaded:', {
-        count: allPatients.length,
-        patients: allPatients,
-        firstPatient: allPatients[0]
-          ? {
-              id: allPatients[0].id,
-              name: allPatients[0].name,
-              keys: Object.keys(allPatients[0]),
-              mobile: allPatients[0].mobile,
-              phone: (allPatients[0] as any).phone,
-              mobileNumber: (allPatients[0] as any).mobileNumber,
-            }
-          : null,
-      });
-      setPatients(allPatients);
-      setFilteredPatients(allPatients);
-      console.log(
-        '✅ State updated - patients:',
-        allPatients.length,
-        'filtered:',
-        allPatients.length,
+  const filteredPatients = useMemo(() => {
+    let filtered = [...patients];
+    if (patientSearch.trim() !== '') {
+      const query = patientSearch.toLowerCase();
+      filtered = filtered.filter(
+        (patient) =>
+          patient.name.toLowerCase().includes(query) ||
+          patient.mobile.includes(patientSearch),
       );
-    } catch (error) {
-      console.error('❌ Failed to load patients:', error);
-    } finally {
-      setLoading(false);
-      console.log('🏁 Loading complete');
     }
-  };
+    return filtered;
+  }, [patients, patientSearch]);
 
   const handleAddNewPatient = () => {
     setIsModalOpen(true);
@@ -128,7 +82,7 @@ export default function AllPatientsScreen() {
 
     try {
       console.log('🔄 Creating patient...');
-      const patient = await patientService.create({
+      const patient = await createPatientMutation.mutateAsync({
         name: newPatient.name.trim(),
         mobile: newPatient.mobile.trim(),
         age: newPatient.age ? Number(newPatient.age) : undefined,
@@ -145,9 +99,6 @@ export default function AllPatientsScreen() {
 
       // Close modal
       setIsModalOpen(false);
-
-      // Reload patients list to show the new patient
-      await loadPatients();
     } catch (error: any) {
       console.error('❌ Failed to create patient:', error);
 
@@ -171,7 +122,7 @@ export default function AllPatientsScreen() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-center justify-center">
         <div className="text-gray-500">Loading patients...</div>
@@ -192,7 +143,7 @@ export default function AllPatientsScreen() {
               <p className="text-xs md:text-base text-gray-600 mt-1">
                 {filteredPatients.length}{' '}
                 {filteredPatients.length === 1 ? 'patient' : 'patients'}
-                {searchQuery && ` found`}
+                {patientSearch && ` found`}
               </p>
             </div>
             <Button
@@ -210,8 +161,8 @@ export default function AllPatientsScreen() {
           <Input
             type="text"
             placeholder="Search by name or mobile..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={patientSearch}
+            onChange={(e) => setPatientSearch(e.target.value)}
             className="w-full text-sm md:text-base"
           />
         </div>
@@ -336,7 +287,7 @@ export default function AllPatientsScreen() {
           <Card.Root className="border-teal-200">
             <Card.Panel className="p-12 text-center">
               <div className="text-gray-500">
-                {searchQuery ? (
+                {patientSearch ? (
                   <>
                     <p className="text-lg font-medium mb-2">
                       No patients found

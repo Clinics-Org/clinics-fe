@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useClinic } from '../hooks/useClinic';
-import { authService } from '../services/authService';
+import { useAuthStore } from '../stores/auth.store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,13 +10,14 @@ import { toast } from '@/components/ui/toast';
 export default function SettingsScreen() {
   const navigate = useNavigate();
   const { clinic, loading } = useClinic();
+  const logout = useAuthStore((state) => state.logout);
   const clinicName = clinic?.name || 'Clinic OPD Management';
   const clinicAddress = clinic?.address || '';
   const clinicPhone = clinic?.phone || '';
   const clinicEmail = clinic?.email || '';
 
   const handleLogout = () => {
-    authService.logout();
+    logout();
     toast.add({
       type: 'success',
       title: 'Logged out successfully',

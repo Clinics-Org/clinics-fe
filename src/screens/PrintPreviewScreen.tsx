@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Stepper } from '../components/ui/stepper';
-import { visitService } from '../services/visitService';
-import { patientService } from '../services/patientService';
-import { prescriptionService } from '../services/prescriptionService';
 import { printUtils } from '../utils/print';
 import { visitSteps } from '../utils/visitStepper';
 import { useClinic } from '../hooks/useClinic';
-import type { Patient, Visit } from '../types';
+import { useVisit, useUpdateVisitStatus } from '../queries/visits.queries';
+import { usePatient } from '../queries/patients.queries';
+import { usePrescription } from '../queries/prescriptions.queries';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs } from '@/components/ui/tabs';
@@ -16,65 +15,39 @@ export default function PrintPreviewScreen() {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
   const { clinic } = useClinic();
-  const [visit, setVisit] = useState<Visit | null>(null);
-  const [patient, setPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState<'a4' | 'thermal'>('a4');
   const clinicName = clinic?.name || 'Clinic OPD Management';
+  const { data: visit } = useVisit(visitId || '');
+  const { data: patient } = usePatient(visit?.patientId || '');
+  const { data: prescriptionData } = usePrescription(
+    visit?.prescription_id || '',
+  );
+  const updateVisitStatusMutation = useUpdateVisitStatus();
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!visitId) {
-        navigate('/visits');
-        return;
-      }
-
-      const currentVisit = await visitService.getById(visitId);
-      if (!currentVisit) {
-        navigate('/visits');
-        return;
-      }
-
-      // If prescription_id exists, fetch the prescription data
-      let prescription = null;
-      if (currentVisit.prescription_id) {
-        prescription = await prescriptionService.getById(
-          currentVisit.prescription_id,
-        );
-      } else if (currentVisit.prescription) {
-        // Fallback to visit.prescription if it exists
-        prescription = currentVisit.prescription;
-      }
-
-      if (!prescription) {
-        navigate('/visits');
-        return;
-      }
-
-      // Set visit with prescription
-      setVisit({ ...currentVisit, prescription });
-      const patientData = await patientService.getById(currentVisit.patientId);
-      setPatient(patientData);
-    };
-
-    loadData();
-  }, [visitId, navigate]);
+  const prescription = useMemo(() => {
+    if (visit?.prescription_id) return prescriptionData || null;
+    return visit?.prescription || null;
+  }, [visit, prescriptionData]);
 
   const handlePrint = async () => {
-    if (!visit || !patient || !visit.prescription) return;
+    if (!visit || !patient || !prescription) return;
 
     if (activeTab === 'a4') {
-      printUtils.printA4(patient, visit, visit.prescription, clinicName);
+      printUtils.printA4(patient, visit, prescription, clinicName);
     } else {
-      printUtils.printThermal(patient, visit, visit.prescription, clinicName);
+      printUtils.printThermal(patient, visit, prescription, clinicName);
     }
 
     // Update visit status to completed after printing
     if (visitId) {
-      await visitService.updateStatus(visitId, 'completed');
+      await updateVisitStatusMutation.mutateAsync({
+        id: visitId,
+        status: 'completed',
+      });
     }
   };
 
-  if (!visit || !patient || !visit.prescription) {
+  if (!visit || !patient || !prescription) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-gray-500">Loading...</div>
@@ -153,9 +126,9 @@ export default function PrintPreviewScreen() {
                   </p>
                 </div>
 
-                {visit.prescription.notes && (
+                {prescription.notes && (
                   <div className="mb-6 text-sm md:text-base wrap-break-word">
-                    <strong>Notes:</strong> {visit.prescription.notes}
+                    <strong>Notes:</strong> {prescription.notes}
                   </div>
                 )}
 
@@ -178,7 +151,7 @@ export default function PrintPreviewScreen() {
                       </tr>
                     </thead>
                     <tbody>
-                      {visit.prescription.medicines.map((med, idx) => (
+                      {prescription.medicines.map((med, idx) => (
                         <tr key={idx}>
                           <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base wrap-break-word">
                             {med.name}
@@ -198,11 +171,10 @@ export default function PrintPreviewScreen() {
                   </table>
                 </div>
 
-                {visit.prescription.followUp && (
+                {prescription.followUp && (
                   <p className="mb-6">
                     <strong>Follow-up:</strong> After{' '}
-                    {visit.prescription.followUp.value}{' '}
-                    {visit.prescription.followUp.unit}
+                    {prescription.followUp.value} {prescription.followUp.unit}
                   </p>
                 )}
 
@@ -243,7 +215,7 @@ export default function PrintPreviewScreen() {
                   </div>
                 </div>
 
-                {visit.prescription.medicines.map((med, idx) => (
+                {prescription.medicines.map((med, idx) => (
                   <div
                     key={idx}
                     className="mb-3 pb-2 border-b border-dotted border-gray-400"
@@ -256,10 +228,10 @@ export default function PrintPreviewScreen() {
                   </div>
                 ))}
 
-                {visit.prescription.followUp && (
+                {prescription.followUp && (
                   <div className="mt-4 text-center font-bold">
-                    Follow-up: {visit.prescription.followUp.value}{' '}
-                    {visit.prescription.followUp.unit}
+                    Follow-up: {prescription.followUp.value}{' '}
+                    {prescription.followUp.unit}
                   </div>
                 )}
 

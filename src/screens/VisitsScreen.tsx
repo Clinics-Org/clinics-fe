@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { patientService } from '../services/patientService';
-import { visitService } from '../services/visitService';
-import type { Patient, Visit, ClinicDoctor } from '../types';
-import { clinicService } from '../services/clinicService';
+import type { Patient, Visit } from '../types';
+import {
+  useCreatePatient,
+  usePatientSearch,
+} from '../queries/patients.queries';
+import { useCreateVisit, useVisitsList } from '../queries/visits.queries';
+import { useCurrentClinic } from '../queries/clinic.queries';
+import { useFiltersStore } from '../stores/filters.store';
 import {
   validatePhoneNumber,
   formatPhoneInput,
@@ -25,9 +29,6 @@ import { toast } from '@/components/ui/toast';
 export default function VisitsScreen() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [visits, setVisits] = useState<Visit[]>([]);
-  const [filteredVisits, setFilteredVisits] = useState<Visit[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Date filter - default to today
@@ -39,14 +40,17 @@ export default function VisitsScreen() {
   // Doctor filter
   const [selectedDoctorFilter, setSelectedDoctorFilter] = useState<string>('');
 
-  // Visit status filter - default to WAITING
-  const [selectedVisitStatus, setSelectedVisitStatus] =
-    useState<string>('WAITING');
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+
+  const selectedVisitStatus = useFiltersStore((state) => state.visitStatus);
+  const setSelectedVisitStatus = useFiltersStore(
+    (state) => state.setVisitStatus,
+  );
 
   // Modal states
   const [step, setStep] = useState<'mobile' | 'patient-form'>('mobile');
   const [mobileNumber, setMobileNumber] = useState('');
-  const [searching, setSearching] = useState(false);
   const [foundPatient, setFoundPatient] = useState<Patient | null>(null);
   const [newPatient, setNewPatient] = useState({
     name: '',
@@ -55,100 +59,54 @@ export default function VisitsScreen() {
     gender: '' as 'M' | 'F' | '',
   });
   const [visitReason, setVisitReason] = useState('');
-  const [doctors, setDoctors] = useState<ClinicDoctor[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
   const [doctorError, setDoctorError] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Load all visits when filters change
-  useEffect(() => {
-    loadVisits();
-  }, [selectedDate, selectedDoctorFilter, selectedVisitStatus]);
+  const { data: clinic } = useCurrentClinic();
+  const clinicDoctors = clinic?.doctors || [];
+  const createPatientMutation = useCreatePatient();
+  const createVisitMutation = useCreateVisit();
+  const patientSearchQuery = usePatientSearch(mobileNumber);
+  const searching = patientSearchQuery.isFetching;
 
-  // Load doctors once on mount
-  useEffect(() => {
-    const loadDoctors = async () => {
-      try {
-        const clinic = await clinicService.getCurrentClinic();
-        const clinicDoctors = clinic?.doctors || [];
-        setDoctors(clinicDoctors);
-        if (clinicDoctors.length === 1) {
-          setSelectedDoctorId(clinicDoctors[0].id);
-        }
-      } catch (error) {
-        console.error('❌ Failed to load doctors from clinic:', error);
-      }
-    };
+  const visitStatus =
+    selectedVisitStatus && selectedVisitStatus !== 'ALL'
+      ? (selectedVisitStatus as
+          | 'WAITING'
+          | 'IN_PROGRESS'
+          | 'COMPLETED'
+          | 'CANCELLED')
+      : undefined;
 
-    loadDoctors();
-  }, []);
+  const doctorId =
+    selectedDoctorFilter && selectedDoctorFilter !== 'all'
+      ? selectedDoctorFilter
+      : undefined;
 
-  // Filter visits based on search
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredVisits(visits);
-      return;
-    }
+  const { data: visitsResult, isLoading: loading } = useVisitsList({
+    page,
+    pageSize,
+    date: selectedDate,
+    visitStatus,
+    doctorId,
+  });
 
+  const visits = visitsResult?.visits || [];
+  const totalCount = visitsResult?.count || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const filteredVisits = useMemo(() => {
+    if (!searchQuery.trim()) return visits;
     const query = searchQuery.toLowerCase();
-    const filtered = visits.filter((visit) => {
+    return visits.filter((visit) => {
       const patient = visit.patient;
       if (!patient) return false;
-
       const nameMatch = patient.name?.toLowerCase().includes(query);
       const mobileMatch = patient.mobile?.includes(query);
       const reasonMatch = visit.visit_reason?.toLowerCase().includes(query);
-
       return nameMatch || mobileMatch || reasonMatch;
     });
-
-    setFilteredVisits(filtered);
   }, [searchQuery, visits]);
-
-  const loadVisits = async () => {
-    try {
-      setLoading(true);
-      console.log('🔄 Loading visits with filters:', {
-        date: selectedDate,
-        doctorId: selectedDoctorFilter,
-        visitStatus: selectedVisitStatus,
-      });
-
-      const visitStatus = selectedVisitStatus
-        ? (selectedVisitStatus as
-            | 'WAITING'
-            | 'IN_PROGRESS'
-            | 'COMPLETED'
-            | 'CANCELLED')
-        : undefined;
-
-      // Handle "all" value for doctor filter
-      const doctorId =
-        selectedDoctorFilter && selectedDoctorFilter !== 'all'
-          ? selectedDoctorFilter
-          : undefined;
-
-      const result = await visitService.getAllVisits(
-        1,
-        50,
-        selectedDate,
-        visitStatus,
-        doctorId,
-      );
-
-      console.log('📊 Visits loaded:', result.visits.length);
-      setVisits(result.visits);
-      setFilteredVisits(result.visits);
-    } catch (error) {
-      console.error('❌ Failed to load visits:', error);
-      toast.add({
-        type: 'error',
-        title: 'Failed to load visits',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCreateVisit = () => {
     setIsModalOpen(true);
@@ -160,11 +118,15 @@ export default function VisitsScreen() {
     setErrors({});
     setDoctorError('');
     // Auto-select doctor if only one is available
-    if (doctors.length === 1) {
-      setSelectedDoctorId(doctors[0].id);
-    } else if (doctors.length > 1) {
+    if (clinicDoctors.length === 1) {
+      setSelectedDoctorId(clinicDoctors[0].id);
+    } else if (clinicDoctors.length > 1) {
       setSelectedDoctorId(''); // Reset to allow user to choose
     }
+  };
+
+  const handleVisitClick = (visit: Visit) => {
+    navigate(`/visit/${visit.id}`);
   };
 
   const handleSearchPatient = async () => {
@@ -177,11 +139,11 @@ export default function VisitsScreen() {
     }
 
     try {
-      setSearching(true);
       setErrors({});
 
       console.log('🔍 Searching for patient with mobile:', mobileNumber);
-      const searchResults = await patientService.search(mobileNumber);
+      const result = await patientSearchQuery.refetch();
+      const searchResults = result.data || [];
 
       if (searchResults.length > 0) {
         // Patient found - use the first match
@@ -213,8 +175,6 @@ export default function VisitsScreen() {
         type: 'error',
         title: 'Failed to search patient',
       });
-    } finally {
-      setSearching(false);
     }
   };
 
@@ -237,14 +197,14 @@ export default function VisitsScreen() {
     ) {
       newErrors.age = 'Age must be a valid number';
     }
-    if (doctors.length > 1 && !selectedDoctorId) {
+    if (clinicDoctors.length > 1 && !selectedDoctorId) {
       setDoctorError('Please select a doctor');
     } else {
       setDoctorError('');
     }
     setErrors(newErrors);
     const hasFieldErrors = Object.keys(newErrors).length === 0;
-    const hasDoctorError = doctors.length > 1 ? !selectedDoctorId : false;
+    const hasDoctorError = clinicDoctors.length > 1 ? !selectedDoctorId : false;
     return hasFieldErrors && !hasDoctorError;
   };
 
@@ -269,7 +229,7 @@ export default function VisitsScreen() {
       } else {
         // Create new patient
         console.log('🔄 Creating new patient...');
-        const patient = await patientService.create({
+        const patient = await createPatientMutation.mutateAsync({
           name: newPatient.name.trim(),
           mobile: newPatient.mobile.trim(),
           age: newPatient.age ? Number(newPatient.age) : undefined,
@@ -281,7 +241,7 @@ export default function VisitsScreen() {
 
       // Create visit
       console.log('🔄 Creating visit...');
-      const visit = await visitService.create({
+      const visit = await createVisitMutation.mutateAsync({
         patientId,
         visitReason: visitReason.trim() || 'General consultation',
         status: 'waiting',
@@ -296,7 +256,6 @@ export default function VisitsScreen() {
       setIsModalOpen(false);
 
       // Reload visits and navigate
-      await loadVisits();
       navigate(`/visit/${visit.id}`);
     } catch (error: any) {
       console.error('❌ Failed to create visit:', error);
@@ -329,10 +288,6 @@ export default function VisitsScreen() {
         });
       }
     }
-  };
-
-  const handleVisitClick = (visit: Visit) => {
-    navigate(`/visit/${visit.id}`);
   };
 
   const getStatusColor = (status: string) => {
@@ -402,12 +357,15 @@ export default function VisitsScreen() {
           <div className="sm:w-40 md:w-48">
             <DatePicker
               value={selectedDate}
-              onChange={(value) => setSelectedDate(value)}
+              onChange={(value) => {
+                setSelectedDate(value);
+                setPage(1);
+              }}
               placeholder="Select date"
               className="w-full text-sm"
             />
           </div>
-          {doctors.length > 0 && (
+          {clinicDoctors.length > 0 && (
             <div className="flex flex-col items-start gap-2 sm:w-48 md:w-56">
               <Label>Doctor</Label>
 
@@ -415,6 +373,7 @@ export default function VisitsScreen() {
                 value={selectedDoctorFilter || undefined}
                 onValueChange={(value) => {
                   setSelectedDoctorFilter(value === 'all' ? '' : value || '');
+                  setPage(1);
                 }}
               >
                 <Select.Trigger className="w-full text-sm">
@@ -424,7 +383,7 @@ export default function VisitsScreen() {
                 <Select.Popup>
                   <Select.Item value="all">All Doctors</Select.Item>
 
-                  {doctors.map((doc) => (
+                  {clinicDoctors.map((doc) => (
                     <Select.Item key={doc.id} value={doc.id}>
                       {doc.name}
                     </Select.Item>
@@ -440,19 +399,47 @@ export default function VisitsScreen() {
 
             <Select.Root
               value={selectedVisitStatus || undefined}
-              onValueChange={(value) => setSelectedVisitStatus(value || '')}
+              onValueChange={(value) => {
+                setSelectedVisitStatus(value || 'ALL');
+                setPage(1);
+              }}
             >
               <Select.Trigger className="w-full text-sm">
                 <Select.Value placeholder="All Statuses" />
               </Select.Trigger>
 
               <Select.Popup>
+                <Select.Item value="ALL">All Statuses</Select.Item>
                 <Select.Item value="WAITING">Waiting</Select.Item>
                 <Select.Item value="IN_PROGRESS">In Progress</Select.Item>
                 <Select.Item value="COMPLETED">Completed</Select.Item>
                 <Select.Item value="CANCELLED">Cancelled</Select.Item>
               </Select.Popup>
             </Select.Root>
+          </div>
+        </div>
+
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="text-xs md:text-sm text-gray-600">
+            Page {page} of {totalPages}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              Prev
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            >
+              Next
+            </Button>
           </div>
         </div>
 
@@ -704,7 +691,7 @@ export default function VisitsScreen() {
                   />
                 </div>
 
-                {doctors.length > 1 && (
+                {clinicDoctors.length > 1 && (
                   <div className="flex flex-col items-start gap-2">
                     <Label>Select Doctor *</Label>
                     <Select.Root
@@ -720,7 +707,7 @@ export default function VisitsScreen() {
                         <Select.Value placeholder="Select doctor" />
                       </Select.Trigger>
                       <Select.Popup>
-                        {doctors.map((doc) => (
+                        {clinicDoctors.map((doc) => (
                           <Select.Item key={doc.id} value={doc.id}>
                             {doc.name}
                           </Select.Item>
@@ -754,7 +741,9 @@ export default function VisitsScreen() {
 
             <Button
               onClick={() => {
-                step === 'mobile' ? handleSearchPatient() : handleCreateVisit();
+                step === 'mobile'
+                  ? handleSearchPatient()
+                  : handleCreateVisitSubmit();
               }}
               disabled={searching}
             >

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/authService';
+import { useLogin } from '../queries/auth.queries';
+import { useAuthStore } from '../stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,8 +11,10 @@ export default function LoginScreen() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const loginMutation = useLogin();
+  const setTokens = useAuthStore((state) => state.setTokens);
+  const loading = loginMutation.isPending;
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -38,13 +41,13 @@ export default function LoginScreen() {
     }
 
     try {
-      setLoading(true);
       setErrors({});
 
-      await authService.login({
+      const result = await loginMutation.mutateAsync({
         email: email.trim(),
         password: password,
       });
+      setTokens(result.access, result.refresh);
 
       toast.add({
         title: 'Login successful!',
@@ -61,7 +64,6 @@ export default function LoginScreen() {
         form: error?.message || 'Login failed. Please check your credentials.',
       });
     } finally {
-      setLoading(false);
     }
   };
 

@@ -128,30 +128,6 @@ const NotesInput = React.forwardRef<HTMLInputElement, NotesInputProps>(
               {label}
             </label>
           )}
-          <Popover.Arrow
-            render={
-              <div className="relative">
-                <input
-                  type="text"
-                  id={inputId}
-                  ref={inputRef}
-                  value={value}
-                  onChange={handleInputChange}
-                  onFocus={handleInputFocus}
-                  onKeyDown={handleInputKeyDown}
-                  className={cn(
-                    'flex h-10 w-full rounded-md border border-teal-300 bg-white px-3 py-2 text-sm',
-                    'ring-offset-white placeholder:text-gray-400',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2',
-                    'disabled:cursor-not-allowed disabled:opacity-50',
-                    error && 'border-red-500 focus-visible:ring-red-500',
-                    className,
-                  )}
-                  {...props}
-                />
-              </div>
-            }
-          />
 
           <Popover.Portal>
             <Popover.Positioner
@@ -159,6 +135,30 @@ const NotesInput = React.forwardRef<HTMLInputElement, NotesInputProps>(
               sideOffset={4}
               collisionPadding={8}
             >
+              <Popover.Arrow
+                render={
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id={inputId}
+                      ref={inputRef}
+                      value={value}
+                      onChange={handleInputChange}
+                      onFocus={handleInputFocus}
+                      onKeyDown={handleInputKeyDown}
+                      className={cn(
+                        'flex h-10 w-full rounded-md border border-teal-300 bg-white px-3 py-2 text-sm',
+                        'ring-offset-white placeholder:text-gray-400',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2',
+                        'disabled:cursor-not-allowed disabled:opacity-50',
+                        error && 'border-red-500 focus-visible:ring-red-500',
+                        className,
+                      )}
+                      {...props}
+                    />
+                  </div>
+                }
+              />
               <Popover.Popup
                 className={cn(
                   'z-[9999] w-[var(--radix-popover-trigger-width)] max-h-48 overflow-auto rounded-md border border-teal-200 bg-white shadow-lg',

@@ -22,6 +22,7 @@ export interface ApiError {
 
 class ApiClient {
   private baseURL: string;
+  private refreshPromise: Promise<string | null> | null = null;
 
   constructor() {
     // Get base URL from environment variable or use default
@@ -158,6 +159,69 @@ class ApiClient {
     }
   }
 
+  private async refreshAccessToken(): Promise<string | null> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.refreshPromise = (async () => {
+      const refreshToken = localStorage.getItem('auth_refresh_token');
+      if (!refreshToken) return null;
+
+      try {
+        const refreshEndpoint =
+          import.meta.env.VITE_API_REFRESH_ENDPOINT || '/auth/refresh';
+        const url = this.buildURL(refreshEndpoint);
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ refresh: refreshToken }),
+        });
+
+        const contentType = response.headers.get('content-type') || '';
+        let result: any = null;
+        if (contentType.includes('application/json')) {
+          result = await response.json();
+        } else {
+          const text = await response.text();
+          try {
+            result = JSON.parse(text);
+          } catch {
+            result = null;
+          }
+        }
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const access =
+          result?.access || result?.data?.access || result?.token || null;
+        const refresh =
+          result?.refresh || result?.data?.refresh || refreshToken || null;
+
+        if (access) {
+          localStorage.setItem('auth_access_token', access);
+        }
+        if (refresh) {
+          localStorage.setItem('auth_refresh_token', refresh);
+        }
+
+        return access;
+      } catch (error) {
+        return null;
+      } finally {
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
+  }
+
   /**
    * Real HTTP request handler
    */
@@ -166,6 +230,7 @@ class ApiClient {
     endpoint: string,
     data?: any,
     params?: Record<string, string | number>,
+    retry?: boolean,
   ): Promise<ApiResponse<T>> {
     try {
       const url = this.buildURL(endpoint, params);
@@ -288,6 +353,19 @@ class ApiClient {
       });
 
       if (!response.ok) {
+        const unauthorized =
+          response.status === 401 ||
+          result?.error?.code === 'UNAUTHORIZED' ||
+          result?.code === 'UNAUTHORIZED' ||
+          result?.message?.toLowerCase?.().includes('token expired');
+
+        if (unauthorized && !retry) {
+          const newAccess = await this.refreshAccessToken();
+          if (newAccess) {
+            return this.realRequest<T>(method, endpoint, data, params, true);
+          }
+        }
+
         console.error('❌ API Error Response:', result);
         return {
           success: false,

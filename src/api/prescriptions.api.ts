@@ -3,9 +3,9 @@
 // PUT /api/visits/prescription/:prescriptionId (update)
 // GET /api/visits/prescription/:prescriptionId (get)
 
-import { apiClient } from './apiClient';
+import { apiClient } from './client';
 import type { Prescription, Medicine, FollowUp } from '../types';
-import { visitService } from './visitService';
+import { visitService } from './visits.api';
 
 export const prescriptionService = {
   /**

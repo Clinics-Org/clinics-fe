@@ -1,54 +1,36 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Stepper } from '../components/ui/stepper';
-import { visitService } from '../services/visitService';
-import { prescriptionService } from '../services/prescriptionService';
+import { useVisit } from '../queries/visits.queries';
+import { usePrescription } from '../queries/prescriptions.queries';
 import { getVisitStep, visitSteps } from '../utils/visitStepper';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Visit } from '@/types';
 
 export default function ConsultationScreen() {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
   const [notes, setNotes] = useState('');
-  const [visit, setVisit] = useState<Visit | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const saveTimeoutRef = useRef<number | null>(null);
+  const { data: visit } = useVisit(visitId || '');
+  const { data: prescription } = usePrescription(
+    visit?.prescription_id || '',
+  );
 
   useEffect(() => {
-    const loadVisit = async () => {
-      if (!visitId) {
-        navigate('/visits');
-        return;
-      }
-
-      const visitData = await visitService.getById(visitId);
-      if (!visitData) {
-        navigate('/visits');
-        return;
-      }
-
-      setVisit(visitData);
-
-      // If a prescription already exists, pre-populate notes from the prescription
-      if (visitData.prescription_id) {
-        const prescription = await prescriptionService.getById(
-          visitData.prescription_id,
-        );
-        if (prescription?.notes) {
-          setNotes(prescription.notes);
-        } else {
-          setNotes(visitData.notes || '');
-        }
-      } else {
-        setNotes(visitData.notes || '');
-      }
-      textareaRef.current?.focus();
-    };
-
-    loadVisit();
-  }, [visitId, navigate]);
+    if (!visitId) {
+      navigate('/visits');
+      return;
+    }
+    if (!visit) return;
+    if (visit.prescription_id && prescription?.notes) {
+      setNotes(prescription.notes);
+    } else {
+      setNotes(visit.notes || '');
+    }
+    textareaRef.current?.focus();
+  }, [visitId, visit, prescription, navigate]);
 
   const handleNotesChange = (value: string) => {
     setNotes(value);

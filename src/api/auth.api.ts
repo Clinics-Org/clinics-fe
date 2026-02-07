@@ -1,6 +1,12 @@
 // Auth service - Handles authentication and token management
 
-import { apiClient } from './apiClient';
+import { apiClient } from './client';
+import {
+  clearTokens,
+  getAccessToken,
+  getRefreshToken,
+  setTokens,
+} from '../lib/authTokens';
 
 export interface LoginCredentials {
   email: string;
@@ -11,9 +17,6 @@ export interface LoginResponse {
   access: string;
   refresh: string;
 }
-
-const ACCESS_TOKEN_KEY = 'auth_access_token';
-const REFRESH_TOKEN_KEY = 'auth_refresh_token';
 
 export const authService = {
   /**
@@ -40,12 +43,7 @@ export const authService = {
       }
 
       // Store tokens in localStorage
-      if (loginData.access) {
-        localStorage.setItem(ACCESS_TOKEN_KEY, loginData.access);
-      }
-      if (loginData.refresh) {
-        localStorage.setItem(REFRESH_TOKEN_KEY, loginData.refresh);
-      }
+      setTokens(loginData.access, loginData.refresh);
 
       return loginData;
     } catch (error: any) {
@@ -58,14 +56,14 @@ export const authService = {
    * Get access token from storage
    */
   getAccessToken(): string | null {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
+    return getAccessToken();
   },
 
   /**
    * Get refresh token from storage
    */
   getRefreshToken(): string | null {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
+    return getRefreshToken();
   },
 
   /**
@@ -79,7 +77,6 @@ export const authService = {
    * Logout user
    */
   logout(): void {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    clearTokens();
   },
 };

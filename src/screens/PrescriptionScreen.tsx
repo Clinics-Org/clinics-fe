@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Stepper } from '../components/ui/stepper';
-import { visitService } from '../services/visitService';
-import { prescriptionService } from '../services/prescriptionService';
-import { whatsappService } from '../services/whatsappService';
-import { patientService } from '../services/patientService';
 import { getVisitStep, visitSteps } from '../utils/visitStepper';
-import type { Medicine, Prescription, FollowUp, Visit } from '../types';
+import type { Medicine, Prescription, FollowUp } from '../types';
+import { useVisit, useUpdateVisitStatus } from '../queries/visits.queries';
+import {
+  usePrescription,
+  useSavePrescription,
+} from '../queries/prescriptions.queries';
+import { useSendPrescription } from '../queries/whatsapp.queries';
+import { usePatient } from '../queries/patients.queries';
 import {
   extractValidationErrors,
   getErrorMessage,
@@ -37,132 +40,100 @@ export default function PrescriptionScreen() {
   const [followUpEnabled, setFollowUpEnabled] = useState(false);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
-  const [visit, setVisit] = useState<Visit | null>(null);
   const [existingPrescriptionNotes, setExistingPrescriptionNotes] = useState<
     string | undefined
   >(undefined);
-  const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [medicineErrors, setMedicineErrors] = useState<
     Record<string, Record<string, string>>
   >({});
+  const { data: visit, isLoading: visitLoading } = useVisit(visitId || '');
+  const { data: prescriptionData, isLoading: prescriptionLoading } =
+    usePrescription(visit?.prescription_id || '');
+  const { data: patient } = usePatient(visit?.patientId || '');
+  const savePrescriptionMutation = useSavePrescription(visitId || '');
+  const updateVisitStatusMutation = useUpdateVisitStatus();
+  const sendPrescriptionMutation = useSendPrescription();
+
+  const createMedicine = (medicineData: Omit<Medicine, 'id'>): Medicine => ({
+    ...medicineData,
+    id: `medicine_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  });
 
   useEffect(() => {
-    const loadVisit = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    if (!visitId) {
+      console.log('⚠️ No visitId provided');
+      navigate('/visits');
+    }
+  }, [visitId, navigate]);
 
-        if (!visitId) {
-          console.log('⚠️ No visitId provided');
-          setLoading(false);
-          navigate('/visits');
-          return;
-        }
+  useEffect(() => {
+    if (visitId && !visitLoading && !visit) {
+      setError('Visit not found');
+      toast.add({
+        title: 'Visit not found',
+        type: 'error',
+      });
+    }
+  }, [visitId, visitLoading, visit]);
 
-        console.log('🔄 Loading visit:', visitId);
-        const visitData = await visitService.getById(visitId);
+  useEffect(() => {
+    if (initialized || !visit) return;
+    setError(null);
 
-        if (!visitData) {
-          console.error('❌ Visit not found:', visitId);
-          setError('Visit not found');
-          setLoading(false);
-          toast.add({
-            title: 'Visit not found',
-            type: 'error',
-          });
-          // Don't navigate immediately, let user see the error
-          return;
-        }
-
-        console.log('✅ Visit loaded:', visitData);
-        setVisit(visitData);
-
-        // If prescription_id exists, fetch the prescription data
-        if (visitData.prescription_id) {
-          console.log('🔄 Loading prescription:', visitData.prescription_id);
-          try {
-            const prescriptionData = await prescriptionService.getById(
-              visitData.prescription_id,
-            );
-            if (prescriptionData) {
-              console.log('✅ Prescription loaded:', prescriptionData);
-              setMedicines(
-                prescriptionData.medicines.length > 0
-                  ? prescriptionData.medicines
-                  : [
-                      prescriptionService.createMedicine({
-                        name: '',
-                        dosage: '',
-                        duration: '',
-                        notes: '',
-                      }),
-                    ],
-              );
-              setFollowUp(prescriptionData.followUp || null);
-              setExistingPrescriptionNotes(prescriptionData.notes);
-              if (prescriptionData.followUp) {
-                setFollowUpValue(prescriptionData.followUp.value.toString());
-                setFollowUpUnit(prescriptionData.followUp.unit);
-                setFollowUpEnabled(true);
-              } else {
-                setFollowUpEnabled(false);
-              }
-            } else {
-              console.log(
-                '⚠️ Prescription not found, starting with empty medicine',
-              );
-              // If fetch failed, start with empty medicine row
-              const initialMedicine: Medicine =
-                prescriptionService.createMedicine({
-                  name: '',
-                  dosage: '',
-                  duration: '',
-                  notes: '',
-                });
-              setMedicines([initialMedicine]);
-            }
-          } catch (prescriptionError: any) {
-            console.error('❌ Error loading prescription:', prescriptionError);
-            // Continue with empty medicine even if prescription fetch fails
-            const initialMedicine: Medicine =
-              prescriptionService.createMedicine({
+    if (visit.prescription_id && prescriptionData) {
+      setMedicines(
+        prescriptionData.medicines.length > 0
+          ? prescriptionData.medicines
+          : [
+              createMedicine({
                 name: '',
                 dosage: '',
                 duration: '',
                 notes: '',
-              });
-            setMedicines([initialMedicine]);
-          }
-        } else {
-          console.log('ℹ️ No prescription_id, starting with empty medicine');
-          // No prescription exists yet, start with empty medicine row
-          const initialMedicine: Medicine = prescriptionService.createMedicine({
-            name: '',
-            dosage: '',
-            duration: '',
-            notes: '',
-          });
-          setMedicines([initialMedicine]);
-        }
-      } catch (err: any) {
-        console.error('❌ Error loading visit:', err);
-        setError(err?.message || 'Failed to load visit');
-        toast.add({
-          title: 'Failed to load visit data',
-          type: 'error',
-        });
-      } finally {
-        console.log('🏁 Setting loading to false');
-        setLoading(false);
+              }),
+            ],
+      );
+      setFollowUp(prescriptionData.followUp || null);
+      setExistingPrescriptionNotes(prescriptionData.notes);
+      if (prescriptionData.followUp) {
+        setFollowUpValue(prescriptionData.followUp.value.toString());
+        setFollowUpUnit(prescriptionData.followUp.unit);
+        setFollowUpEnabled(true);
+      } else {
+        setFollowUpEnabled(false);
       }
-    };
+      setInitialized(true);
+      return;
+    }
 
-    loadVisit();
-  }, [visitId, navigate]);
+    if (visit.prescription_id && !prescriptionLoading && !prescriptionData) {
+      const initialMedicine: Medicine = createMedicine({
+        name: '',
+        dosage: '',
+        duration: '',
+        notes: '',
+      });
+      setMedicines([initialMedicine]);
+      setInitialized(true);
+      return;
+    }
+
+    if (!visit.prescription_id) {
+      const initialMedicine: Medicine = createMedicine({
+        name: '',
+        dosage: '',
+        duration: '',
+        notes: '',
+      });
+      setMedicines([initialMedicine]);
+      setInitialized(true);
+    }
+  }, [initialized, visit, prescriptionData, prescriptionLoading]);
 
   const handleAddMedicine = () => {
-    const newMedicine: Medicine = prescriptionService.createMedicine({
+    const newMedicine: Medicine = createMedicine({
       name: '',
       dosage: '',
       duration: '',
@@ -244,28 +215,28 @@ export default function PrescriptionScreen() {
     }
 
     try {
-      const success = await prescriptionService.saveToVisit(
-        visitId!,
-        prescription,
-      );
-      if (success) {
-        // Reload visit to update stepper and prescription_id
-        const updatedVisit = await visitService.getById(visitId!);
-        if (updatedVisit) {
-          setVisit(updatedVisit);
-        }
+      if (!visitId) {
         toast.add({
-          type: 'success',
-          title: 'Prescription saved',
+          type: 'error',
+          title: 'Visit not found',
         });
-        return true;
-      } else {
+        return false;
+      }
+
+      const result = await savePrescriptionMutation.mutateAsync(prescription);
+      if (!result?.prescriptionId) {
         toast.add({
           type: 'error',
           title: 'Failed to save prescription',
         });
         return false;
       }
+
+      toast.add({
+        type: 'success',
+        title: 'Prescription saved',
+      });
+      return true;
     } catch (error: any) {
       console.error('❌ Failed to save prescription:', error);
 
@@ -317,7 +288,10 @@ export default function PrescriptionScreen() {
     }
 
     // Mark visit as completed
-    await visitService.updateStatus(visitId, 'completed');
+    await updateVisitStatusMutation.mutateAsync({
+      id: visitId,
+      status: 'completed',
+    });
 
     // Redirect to print preview for this visit
     navigate(`/print-preview/${visitId}`);
@@ -342,13 +316,9 @@ export default function PrescriptionScreen() {
   const handleSendWhatsApp = async () => {
     if (!visitId) return;
 
-    const visit = await visitService.getById(visitId);
-    if (!visit) return;
+    if (!visit || !patient) return;
 
-    const patient = await patientService.getById(visit.patientId);
-    if (!patient) return;
-
-    const result = await whatsappService.sendPrescription({
+    const result = await sendPrescriptionMutation.mutateAsync({
       patientId: patient.id,
       visitId: visit.id,
       mobile: patient.mobile,
@@ -362,7 +332,10 @@ export default function PrescriptionScreen() {
 
     // Update visit status to completed after sending WhatsApp
     if (visitId) {
-      await visitService.updateStatus(visitId, 'completed');
+      await updateVisitStatusMutation.mutateAsync({
+        id: visitId,
+        status: 'completed',
+      });
     }
 
     if (result.success) {
@@ -422,6 +395,11 @@ export default function PrescriptionScreen() {
       });
     }
   };
+
+  const loading =
+    visitLoading ||
+    (visit?.prescription_id ? prescriptionLoading : false) ||
+    !initialized;
 
   const prescriptionPreview = medicines.filter((med) => med.name.trim() !== '');
 

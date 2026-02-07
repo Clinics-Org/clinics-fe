@@ -1,7 +1,7 @@
 // Hook to fetch and provide clinic data
 
 import { useState, useEffect } from 'react';
-import { clinicService } from '../services/clinicService';
+import { clinicService } from '../api/clinic.api';
 import type { Clinic } from '../types';
 
 export function useClinic() {

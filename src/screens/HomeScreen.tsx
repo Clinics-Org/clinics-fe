@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClinic } from '../hooks/useClinic';
-import { clinicService } from '../services/clinicService';
-import { Button } from '@/components/ui/button';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Card } from '@/components/ui/card';
-import { toast } from '@/components/ui/toast';
+import { useClinicStats } from '../queries/clinic.queries';
 
 export default function HomeScreen() {
   const navigate = useNavigate();
@@ -22,84 +21,23 @@ export default function HomeScreen() {
     return today.toISOString().split('T')[0]; // YYYY-MM-DD
   });
 
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalPatients: 0,
-    totalVisits: 0,
-    totalCompletedVisits: 0,
-    totalInProgressVisits: 0,
-    totalAppointments: 0,
-    totalPendingVisits: 0,
-    totalPendingAppointments: 0,
+  const { data: statsData, isLoading: loading } = useClinicStats({
+    start: startDate,
+    end: endDate,
   });
 
-  useEffect(() => {
-    loadStats();
-  }, [startDate, endDate]); // Reload when date range changes
-
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-
-      console.log('🔄 Loading clinic stats...', { startDate, endDate });
-      const statsData = await clinicService.getStats(undefined, {
-        start: startDate,
-        end: endDate,
-      });
-
-      if (statsData) {
-        console.log('✅ Clinic stats loaded:', statsData);
-        setStats({
-          totalPatients: statsData.total_patients || 0,
-          totalVisits: statsData.total_visits || 0,
-          totalCompletedVisits: statsData.total_completed_visits || 0,
-          totalInProgressVisits: statsData.total_in_progress_visits || 0,
-          totalAppointments: statsData.total_appointments || 0,
-          totalPendingVisits: statsData.total_pending_visits || 0,
-          totalPendingAppointments: statsData.total_pending_appointments || 0,
-        });
-      } else {
-        console.error('❌ Failed to load clinic stats');
-      }
-    } catch (error) {
-      console.error('❌ Failed to load stats:', error);
-    } finally {
-      setLoading(false);
-    }
+  const stats = {
+    totalPatients: statsData?.total_patients || 0,
+    totalVisits: statsData?.total_visits || 0,
+    totalCompletedVisits: statsData?.total_completed_visits || 0,
+    totalInProgressVisits: statsData?.total_in_progress_visits || 0,
+    totalAppointments: statsData?.total_appointments || 0,
+    totalPendingVisits: statsData?.total_pending_visits || 0,
+    totalPendingAppointments: statsData?.total_pending_appointments || 0,
   };
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 p-3 md:p-6 overflow-x-hidden w-full">
-      <Button
-        onClick={() => {
-          toast.add({
-            title: 'Default',
-            timeout: 1000,
-          });
-          toast.add({
-            title: 'Error',
-            type: 'error',
-          });
-          toast.add({
-            title: 'info',
-            type: 'info',
-          });
-          toast.add({
-            title: 'loading',
-            type: 'loading',
-          });
-          toast.add({
-            title: 'warning',
-            type: 'warning',
-          });
-          toast.add({
-            title: 'success',
-            type: 'success',
-          });
-        }}
-      >
-        Button
-      </Button>
       <div className="max-w-7xl mx-auto w-full">
         {/* Header - Compact on Mobile */}
         <div className="mb-4 md:mb-6">

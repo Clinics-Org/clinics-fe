@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
-import { appointmentService } from '../services/appointmentService';
-import { patientService } from '../services/patientService';
-import type { Appointment, ClinicDoctor, Patient } from '../types';
-import { clinicService } from '../services/clinicService';
+import { useMemo, useState } from 'react';
+import type { ClinicDoctor, Patient } from '../types';
+import {
+  useCreateAppointment,
+  useAppointments,
+  useUpdateAppointmentStatus,
+} from '../queries/appointments.queries';
+import { usePatientSearch } from '../queries/patients.queries';
+import { useCurrentClinic } from '../queries/clinic.queries';
 import {
   validatePhoneNumber,
   formatPhoneInput,
@@ -23,11 +27,6 @@ import { Select } from '@/components/ui/select';
 
 export default function AppointmentsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [filteredAppointments, setFilteredAppointments] = useState<
-    Appointment[]
-  >([]);
-  const [loading, setLoading] = useState(true);
 
   // Date filter - default to today
   const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -38,14 +37,20 @@ export default function AppointmentsScreen() {
   // Doctor filter
   const [selectedDoctorFilter, setSelectedDoctorFilter] = useState<string>('');
 
-  // Doctors list
-  const [doctors, setDoctors] = useState<ClinicDoctor[]>([]);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+
+  const { data: clinic } = useCurrentClinic();
+  const doctors: ClinicDoctor[] = clinic?.doctors || [];
+  const createAppointmentMutation = useCreateAppointment();
+  const updateAppointmentStatusMutation = useUpdateAppointmentStatus();
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [step, setStep] = useState<'mobile' | 'patient-form'>('mobile');
   const [mobileNumber, setMobileNumber] = useState('');
-  const [searching, setSearching] = useState(false);
+  const patientSearchQuery = usePatientSearch(mobileNumber);
+  const searching = patientSearchQuery.isFetching;
   const [foundPatient, setFoundPatient] = useState<Patient | null>(null);
   const [newPatient, setNewPatient] = useState({
     name: '',
@@ -57,78 +62,30 @@ export default function AppointmentsScreen() {
   const [appointmentDateTime, setAppointmentDateTime] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Load doctors once on mount
-  useEffect(() => {
-    const loadDoctors = async () => {
-      try {
-        const clinic = await clinicService.getCurrentClinic();
-        const clinicDoctors = clinic?.doctors || [];
-        setDoctors(clinicDoctors);
-      } catch (error) {
-        console.error('❌ Failed to load doctors from clinic:', error);
-      }
-    };
+  const doctorId =
+    selectedDoctorFilter && selectedDoctorFilter !== 'all'
+      ? selectedDoctorFilter
+      : undefined;
 
-    loadDoctors();
-  }, []);
+  const { data: appointmentsResult, isLoading: loading } = useAppointments({
+    page,
+    pageSize,
+    date: selectedDate,
+    doctorId,
+  });
 
-  // Load all appointments when filters change
-  useEffect(() => {
-    loadAppointments();
-  }, [selectedDate, selectedDoctorFilter]);
-
-  // Filter appointments based on search
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredAppointments(appointments);
-      return;
-    }
-
+  const appointments = appointmentsResult?.appointments || [];
+  const totalCount = appointmentsResult?.count || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const filteredAppointments = useMemo(() => {
+    if (!searchQuery.trim()) return appointments;
     const query = searchQuery.toLowerCase();
-    const filtered = appointments.filter((appointment) => {
+    return appointments.filter((appointment) => {
       const nameMatch = appointment.name?.toLowerCase().includes(query);
       const mobileMatch = appointment.mobile_number?.includes(query);
-
       return nameMatch || mobileMatch;
     });
-
-    setFilteredAppointments(filtered);
   }, [searchQuery, appointments]);
-
-  const loadAppointments = async () => {
-    try {
-      setLoading(true);
-      console.log('🔄 Loading appointments with filters:', {
-        date: selectedDate,
-        doctorId: selectedDoctorFilter,
-      });
-
-      // Handle "all" value for doctor filter
-      const doctorId =
-        selectedDoctorFilter && selectedDoctorFilter !== 'all'
-          ? selectedDoctorFilter
-          : undefined;
-
-      const result = await appointmentService.getAllAppointments(
-        1,
-        50,
-        selectedDate,
-        doctorId,
-      );
-
-      console.log('📊 Appointments loaded:', result.appointments.length);
-      setAppointments(result.appointments);
-      setFilteredAppointments(result.appointments);
-    } catch (error) {
-      console.error('❌ Failed to load appointments:', error);
-      toast.add({
-        title: 'Failed to load appointments',
-        type: 'error',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCreateAppointment = () => {
     setIsModalOpen(true);
@@ -157,11 +114,11 @@ export default function AppointmentsScreen() {
     }
 
     try {
-      setSearching(true);
       setErrors({});
 
       console.log('🔍 Searching for patient with mobile:', mobileNumber);
-      const searchResults = await patientService.search(mobileNumber);
+      const result = await patientSearchQuery.refetch();
+      const searchResults = result.data || [];
 
       if (searchResults.length > 0) {
         // Patient found - use the first match and prefill form data
@@ -192,8 +149,6 @@ export default function AppointmentsScreen() {
         title: 'Failed to search patient',
         type: 'error',
       });
-    } finally {
-      setSearching(false);
     }
   };
 
@@ -267,7 +222,7 @@ export default function AppointmentsScreen() {
       // Create appointment directly (no patient creation needed)
       // The appointment API accepts patient details (name, mobile_number, gender) directly
       console.log('🔄 Creating appointment...');
-      const appointment = await appointmentService.create({
+      const appointment = await createAppointmentMutation.mutateAsync({
         name: newPatient.name.trim(),
         mobile_number: newPatient.mobile.trim(),
         gender: gender,
@@ -284,8 +239,6 @@ export default function AppointmentsScreen() {
       });
       setIsModalOpen(false);
 
-      // Reload appointments
-      await loadAppointments();
     } catch (error: any) {
       console.error('❌ Failed to create appointment:', error);
 
@@ -325,16 +278,15 @@ export default function AppointmentsScreen() {
   ) => {
     e.stopPropagation(); // Prevent card click
     try {
-      const updated = await appointmentService.updateStatus(
+      const updated = await updateAppointmentStatusMutation.mutateAsync({
         appointmentId,
-        'CHECKED_IN',
-      );
+        status: 'CHECKED_IN',
+      });
       if (updated) {
         toast.add({
           title: 'ppointment marked as checked in',
           type: 'success',
         });
-        await loadAppointments(); // Reload to refresh the list
       } else {
         toast.add({
           title: 'Failed to mark check in',
@@ -427,7 +379,10 @@ export default function AppointmentsScreen() {
           <div className="sm:w-40 md:w-48">
             <DatePicker
               value={selectedDate}
-              onChange={(value) => setSelectedDate(value)}
+              onChange={(value) => {
+                setSelectedDate(value);
+                setPage(1);
+              }}
               placeholder="Select date"
               className="w-full text-sm"
             />
@@ -440,6 +395,7 @@ export default function AppointmentsScreen() {
                 value={selectedDoctorFilter || undefined}
                 onValueChange={(value) => {
                   setSelectedDoctorFilter(value || '');
+                  setPage(1);
                 }}
               >
                 <Select.Trigger className="w-full text-sm">
@@ -458,6 +414,30 @@ export default function AppointmentsScreen() {
               </Select.Root>
             </div>
           )}
+        </div>
+
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="text-xs md:text-sm text-gray-600">
+            Page {page} of {totalPages}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              Prev
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            >
+              Next
+            </Button>
+          </div>
         </div>
 
         {filteredAppointments.length > 0 ? (

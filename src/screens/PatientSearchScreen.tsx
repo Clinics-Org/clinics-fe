@@ -1,8 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { patientService } from '../services/patientService';
-import { visitService } from '../services/visitService';
 import type { Patient } from '../types';
+import {
+  useCreatePatient,
+  usePatientSearch,
+  useRecentPatients,
+} from '../queries/patients.queries';
+import { useFiltersStore } from '../stores/filters.store';
+import { useCreateVisit } from '../queries/visits.queries';
+import { useQueryClient } from '@tanstack/react-query';
+import { fetchVisitsByPatient } from '../queries/visits.queries';
 import {
   validatePhoneNumber,
   formatPhoneInput,
@@ -19,8 +26,8 @@ import { Dialog } from '@/components/ui/dialog';
 
 export default function PatientSearchScreen() {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [results, setResults] = useState<Patient[]>([]);
+  const patientSearch = useFiltersStore((state) => state.patientSearch);
+  const setPatientSearch = useFiltersStore((state) => state.setPatientSearch);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPatient, setNewPatient] = useState({
     name: '',
@@ -30,37 +37,28 @@ export default function PatientSearchScreen() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+  const createPatientMutation = useCreatePatient();
+  const createVisitMutation = useCreateVisit();
+  const { data: recentPatients = [] } = useRecentPatients(50);
+  const { data: searchResults = [] } = usePatientSearch(patientSearch);
+
+  const results: Patient[] = useMemo(() => {
+    if (patientSearch.length >= 2) return searchResults;
+    return recentPatients;
+  }, [patientSearch, searchResults, recentPatients]);
 
   // Auto-focus search input
   useEffect(() => {
     searchInputRef.current?.focus();
   }, []);
 
-  // Load all patients or search
-  useEffect(() => {
-    const loadPatients = async () => {
-      if (searchQuery.length >= 2) {
-        // Search mode
-        const timer = setTimeout(async () => {
-          const searchResults = await patientService.search(searchQuery);
-          setResults(searchResults);
-        }, 300);
-        return () => clearTimeout(timer);
-      } else {
-        // Show all patients when no search query
-        const allPatients = await patientService.getRecent(50);
-        setResults(allPatients);
-      }
-    };
-
-    loadPatients();
-  }, [searchQuery]);
-
   const handlePatientClick = async (patient: Patient) => {
     // Get or create active visit
-    let visit = await visitService.getActiveByPatientId(patient.id);
+    const visits = await fetchVisitsByPatient(queryClient, patient.id);
+    let visit = visits.find((v) => v.status === 'in_progress') || null;
     if (!visit) {
-      visit = await visitService.create({ patientId: patient.id });
+      visit = await createVisitMutation.mutateAsync({ patientId: patient.id });
     }
     navigate(`/visit/${visit.id}`);
   };
@@ -68,7 +66,7 @@ export default function PatientSearchScreen() {
   const handleStartVisit = async (e: React.MouseEvent, patient: Patient) => {
     e.stopPropagation(); // Prevent card click
     try {
-      const visit = await visitService.create({
+      const visit = await createVisitMutation.mutateAsync({
         patientId: patient.id,
         status: 'waiting',
       });
@@ -110,7 +108,7 @@ export default function PatientSearchScreen() {
     }
 
     try {
-      const patient = await patientService.create({
+      const patient = await createPatientMutation.mutateAsync({
         name: newPatient.name.trim(),
         mobile: newPatient.mobile.trim(),
         age: newPatient.age ? Number(newPatient.age) : undefined,
@@ -118,7 +116,7 @@ export default function PatientSearchScreen() {
       });
 
       // Create visit for new patient with waiting status
-      const visit = await visitService.create({
+      const visit = await createVisitMutation.mutateAsync({
         patientId: patient.id,
         status: 'waiting',
       });
@@ -155,8 +153,8 @@ export default function PatientSearchScreen() {
             ref={searchInputRef}
             type="text"
             placeholder="Search by name or mobile (min 2 characters)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={patientSearch}
+            onChange={(e) => setPatientSearch(e.target.value)}
             className="w-full"
           />
           <Button onClick={handleAddNewPatient} className="w-40">
@@ -201,19 +199,19 @@ export default function PatientSearchScreen() {
           </div>
         )}
 
-        {searchQuery.length >= 2 && results.length === 0 && (
+        {patientSearch.length >= 2 && results.length === 0 && (
           <div className="text-center py-12 text-gray-500">
             No patients found. Try a different search or add a new patient.
           </div>
         )}
 
-        {searchQuery.length < 2 && results.length === 0 && (
+        {patientSearch.length < 2 && results.length === 0 && (
           <div className="text-center py-12 text-gray-500">
             No patients found. Add a new patient to get started.
           </div>
         )}
 
-        {searchQuery.length < 2 && results.length > 0 && (
+        {patientSearch.length < 2 && results.length > 0 && (
           <div className="mb-4 text-sm text-gray-600">
             Showing all patients ({results.length}). Start typing to search.
           </div>

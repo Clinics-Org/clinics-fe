@@ -1,62 +1,41 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { patientService } from '../services/patientService';
-import { visitService } from '../services/visitService';
-import type { Patient, Visit } from '../types';
+import { usePatient } from '../queries/patients.queries';
+import { useVisitsByPatient } from '../queries/visits.queries';
+import type { Visit } from '../types';
 import { Card } from '@/components/ui/card';
 import { toast } from '@/components/ui/toast';
 
 export default function PatientDetailsScreen() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [visitHistory, setVisitHistory] = useState<Visit[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: patient,
+    isLoading: patientLoading,
+    isError: patientError,
+  } = usePatient(patientId || '');
+  const { data: visitHistory = [], isLoading: visitsLoading } =
+    useVisitsByPatient(patientId || '', 50);
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!patientId) {
-        navigate('/patients');
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const patientData = await patientService.getById(patientId);
-        if (!patientData) {
-          toast.add({
-            title: 'Patient not found',
-            type: 'error',
-          });
-          navigate('/patients');
-          return;
-        }
-
-        setPatient(patientData);
-
-        // Load visit history
-        const history = await visitService.getByPatientId(patientId);
-        setVisitHistory(history);
-      } catch (error) {
-        console.error('Failed to load patient data:', error);
-        toast.add({
-          title: 'Failed to load patient data',
-          type: 'error',
-        });
-        navigate('/patients');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [patientId, navigate]);
+    if (!patientId) {
+      navigate('/patients');
+      return;
+    }
+    if (!patientLoading && !patient) {
+      toast.add({
+        title: patientError ? 'Failed to load patient data' : 'Patient not found',
+        type: 'error',
+      });
+      navigate('/patients');
+    }
+  }, [patientId, patientLoading, patient, patientError, navigate]);
 
   const handleViewVisit = (visit: Visit) => {
     navigate(`/visit/${visit.id}`);
   };
 
-  if (loading) {
+  if (patientLoading || visitsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-gray-500">Loading...</div>

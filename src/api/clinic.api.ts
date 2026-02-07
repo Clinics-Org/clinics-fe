@@ -1,6 +1,6 @@
 // Clinic service - Fetches clinic data from API
 
-import { apiClient } from './apiClient';
+import { apiClient } from './client';
 import type { Clinic } from '../types';
 
 // clinic ID as per requirements

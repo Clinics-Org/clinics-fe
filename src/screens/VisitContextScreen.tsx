@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { patientService } from '../services/patientService';
-import { visitService } from '../services/visitService';
-import { prescriptionService } from '../services/prescriptionService';
-import type { Patient, Visit } from '../types';
+import type { Visit } from '../types';
+import { usePatient } from '../queries/patients.queries';
+import {
+  useVisit,
+  useVisitsByPatient,
+  useUpdateVisitStatus,
+} from '../queries/visits.queries';
+import { usePrescriptionsByIds } from '../queries/prescriptions.queries';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
@@ -11,64 +15,35 @@ import { toast } from '@/components/ui/toast';
 export default function VisitContextScreen() {
   const { visitId } = useParams<{ visitId: string }>();
   const navigate = useNavigate();
-  const [visit, setVisit] = useState<Visit | null>(null);
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [visitHistory, setVisitHistory] = useState<Visit[]>([]);
-  const [historyPrescriptionCounts, setHistoryPrescriptionCounts] = useState<
-    Record<string, number>
-  >({});
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
+  const updateVisitStatusMutation = useUpdateVisitStatus();
+  const { data: visit } = useVisit(visitId || '');
+  const { data: patient } = usePatient(visit?.patientId || '');
+  const { data: visitHistory = [] } = useVisitsByPatient(
+    visit?.patientId || '',
+    50,
+  );
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!visitId) {
-        navigate('/visits');
-        return;
+  const historyWithPrescription = useMemo(
+    () => visitHistory.filter((h) => h.prescription_id),
+    [visitHistory],
+  );
+  const prescriptionIds = useMemo(
+    () => historyWithPrescription.map((h) => h.prescription_id!),
+    [historyWithPrescription],
+  );
+  const prescriptionQueries = usePrescriptionsByIds(prescriptionIds);
+
+  const historyPrescriptionCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    historyWithPrescription.forEach((h, index) => {
+      const data = prescriptionQueries[index]?.data;
+      if (data) {
+        counts[h.id] = data.medicines.length;
       }
-
-      const currentVisit = await visitService.getById(visitId);
-      if (!currentVisit) {
-        navigate('/visits');
-        return;
-      }
-
-      setVisit(currentVisit);
-      const patientData = await patientService.getById(currentVisit.patientId);
-      setPatient(patientData);
-
-      // Load visit history
-      const history = await visitService.getByPatientId(currentVisit.patientId);
-      setVisitHistory(history);
-
-      // For history visits that have a prescription, load medicine counts
-      const entries = await Promise.all(
-        history
-          .filter((h) => h.prescription_id)
-          .map(async (h) => {
-            try {
-              const prescription = await prescriptionService.getById(
-                h.prescription_id!,
-              );
-              if (!prescription) return null;
-              return [h.id, prescription.medicines.length] as const;
-            } catch {
-              return null;
-            }
-          }),
-      );
-
-      const counts: Record<string, number> = {};
-      for (const entry of entries) {
-        if (entry) {
-          const [id, count] = entry;
-          counts[id] = count;
-        }
-      }
-      setHistoryPrescriptionCounts(counts);
-    };
-
-    loadData();
-  }, [visitId, navigate]);
+    });
+    return counts;
+  }, [historyWithPrescription, prescriptionQueries]);
 
   const handleConsultClick = () => {
     if (visit) {
@@ -80,12 +55,11 @@ export default function VisitContextScreen() {
     if (!visit) return;
 
     try {
-      const updatedVisit = await visitService.updateStatus(
-        visit.id,
-        'in_progress',
-      );
+      const updatedVisit = await updateVisitStatusMutation.mutateAsync({
+        id: visit.id,
+        status: 'in_progress',
+      });
       if (updatedVisit) {
-        setVisit(updatedVisit);
         navigate(`/consultation/${visit.id}`);
       } else {
         toast.add({
