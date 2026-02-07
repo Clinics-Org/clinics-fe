@@ -19,7 +19,7 @@ const ToggleGroupContext = React.createContext<
   variant: 'default',
 });
 
-function ToggleGroup({
+function Root({
   className,
   variant = 'default',
   size = 'default',
@@ -54,7 +54,7 @@ function ToggleGroup({
   );
 }
 
-function Toggle({
+function Item({
   className,
   children,
   variant,
@@ -99,4 +99,8 @@ function ToggleGroupSeparator({
   );
 }
 
-export { ToggleGroup, Toggle, Toggle as ToggleGroupItem, ToggleGroupSeparator };
+export const ToggleGroup = {
+  Root,
+  Item,
+  Separator: ToggleGroupSeparator,
+};

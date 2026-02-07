@@ -4,7 +4,7 @@ import { Meter as MeterPrimitive } from '@base-ui/react/meter';
 
 import { cn } from '@/lib/utils';
 
-function Meter({ className, children, ...props }: MeterPrimitive.Root.Props) {
+function Root({ className, children, ...props }: MeterPrimitive.Root.Props) {
   return (
     <MeterPrimitive.Root
       className={cn('flex w-full flex-col gap-2', className)}
@@ -13,15 +13,15 @@ function Meter({ className, children, ...props }: MeterPrimitive.Root.Props) {
       {children ? (
         children
       ) : (
-        <MeterTrack>
-          <MeterIndicator />
-        </MeterTrack>
+        <Track>
+          <Indicator />
+        </Track>
       )}
     </MeterPrimitive.Root>
   );
 }
 
-function MeterLabel({ className, ...props }: MeterPrimitive.Label.Props) {
+function Label({ className, ...props }: MeterPrimitive.Label.Props) {
   return (
     <MeterPrimitive.Label
       className={cn('font-medium text-foreground text-sm', className)}
@@ -31,7 +31,7 @@ function MeterLabel({ className, ...props }: MeterPrimitive.Label.Props) {
   );
 }
 
-function MeterTrack({ className, ...props }: MeterPrimitive.Track.Props) {
+function Track({ className, ...props }: MeterPrimitive.Track.Props) {
   return (
     <MeterPrimitive.Track
       className={cn('block h-2 w-full overflow-hidden bg-input', className)}
@@ -41,7 +41,7 @@ function MeterTrack({ className, ...props }: MeterPrimitive.Track.Props) {
   );
 }
 
-function MeterIndicator({
+function Indicator({
   className,
   ...props
 }: MeterPrimitive.Indicator.Props) {
@@ -54,7 +54,7 @@ function MeterIndicator({
   );
 }
 
-function MeterValue({ className, ...props }: MeterPrimitive.Value.Props) {
+function Value({ className, ...props }: MeterPrimitive.Value.Props) {
   return (
     <MeterPrimitive.Value
       className={cn('text-foreground text-sm tabular-nums', className)}
@@ -64,4 +64,4 @@ function MeterValue({ className, ...props }: MeterPrimitive.Value.Props) {
   );
 }
 
-export { Meter, MeterLabel, MeterTrack, MeterIndicator, MeterValue };
+export const Meter = { Root, Label, Track, Indicator, Value };

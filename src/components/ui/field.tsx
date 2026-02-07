@@ -4,7 +4,7 @@ import { Field as FieldPrimitive } from '@base-ui/react/field';
 
 import { cn } from '@/lib/utils';
 
-function Field({ className, ...props }: FieldPrimitive.Root.Props) {
+function Root({ className, ...props }: FieldPrimitive.Root.Props) {
   return (
     <FieldPrimitive.Root
       className={cn('flex flex-col items-start gap-2', className)}
@@ -14,7 +14,7 @@ function Field({ className, ...props }: FieldPrimitive.Root.Props) {
   );
 }
 
-function FieldLabel({ className, ...props }: FieldPrimitive.Label.Props) {
+function Label({ className, ...props }: FieldPrimitive.Label.Props) {
   return (
     <FieldPrimitive.Label
       className={cn(
@@ -27,7 +27,7 @@ function FieldLabel({ className, ...props }: FieldPrimitive.Label.Props) {
   );
 }
 
-function FieldItem({ className, ...props }: FieldPrimitive.Item.Props) {
+function Item({ className, ...props }: FieldPrimitive.Item.Props) {
   return (
     <FieldPrimitive.Item
       className={cn('flex', className)}
@@ -37,7 +37,7 @@ function FieldItem({ className, ...props }: FieldPrimitive.Item.Props) {
   );
 }
 
-function FieldDescription({
+function Description({
   className,
   ...props
 }: FieldPrimitive.Description.Props) {
@@ -50,7 +50,7 @@ function FieldDescription({
   );
 }
 
-function FieldError({ className, ...props }: FieldPrimitive.Error.Props) {
+function Error({ className, ...props }: FieldPrimitive.Error.Props) {
   return (
     <FieldPrimitive.Error
       className={cn('text-destructive-foreground text-xs', className)}
@@ -60,15 +60,15 @@ function FieldError({ className, ...props }: FieldPrimitive.Error.Props) {
   );
 }
 
-const FieldControl = FieldPrimitive.Control;
-const FieldValidity = FieldPrimitive.Validity;
+const Control = FieldPrimitive.Control;
+const Validity = FieldPrimitive.Validity;
 
-export {
-  Field,
-  FieldLabel,
-  FieldDescription,
-  FieldError,
-  FieldControl,
-  FieldItem,
-  FieldValidity,
+export const Field = {
+  Root,
+  Label,
+  Description,
+  Error,
+  Control,
+  Item,
+  Validity,
 };

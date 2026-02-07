@@ -12,7 +12,7 @@ import {
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const toastManager = Toast.createToastManager();
+const toast = Toast.createToastManager();
 const anchoredToastManager = Toast.createToastManager();
 
 const TOAST_ICONS = {
@@ -41,7 +41,7 @@ function ToastProvider({
   ...props
 }: ToastProviderProps) {
   return (
-    <Toast.Provider toastManager={toastManager} {...props}>
+    <Toast.Provider toastManager={toast} {...props}>
       {children}
       <Toasts position={position} />
     </Toast.Provider>
@@ -263,7 +263,7 @@ function AnchoredToasts() {
 export {
   ToastProvider,
   type ToastPosition,
-  toastManager,
+  toast,
   AnchoredToastProvider,
   anchoredToastManager,
 };

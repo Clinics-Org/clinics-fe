@@ -5,11 +5,11 @@ import { ChevronDownIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-function Accordion(props: AccordionPrimitive.Root.Props) {
+function Root(props: AccordionPrimitive.Root.Props) {
   return <AccordionPrimitive.Root data-slot="accordion" {...props} />;
 }
 
-function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
+function Item({ className, ...props }: AccordionPrimitive.Item.Props) {
   return (
     <AccordionPrimitive.Item
       className={cn('border-b last:border-b-0', className)}
@@ -19,7 +19,7 @@ function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
   );
 }
 
-function AccordionTrigger({
+function Trigger({
   className,
   children,
   ...props
@@ -44,7 +44,7 @@ function AccordionTrigger({
   );
 }
 
-function AccordionPanel({
+function Panel({
   className,
   children,
   ...props
@@ -60,10 +60,9 @@ function AccordionPanel({
   );
 }
 
-export {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionPanel,
-  AccordionPanel as AccordionContent,
+export const Accordion = {
+  Root,
+  Item,
+  Trigger,
+  Panel,
 };

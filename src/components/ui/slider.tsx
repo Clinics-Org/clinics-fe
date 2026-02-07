@@ -5,7 +5,7 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
-function Slider({
+function Root({
   className,
   children,
   defaultValue,
@@ -61,7 +61,7 @@ function Slider({
   );
 }
 
-function SliderValue({ className, ...props }: SliderPrimitive.Value.Props) {
+function Value({ className, ...props }: SliderPrimitive.Value.Props) {
   return (
     <SliderPrimitive.Value
       className={cn('flex justify-end text-sm', className)}
@@ -71,4 +71,4 @@ function SliderValue({ className, ...props }: SliderPrimitive.Value.Props) {
   );
 }
 
-export { Slider, SliderValue };
+export const Slider = { Root, Value };

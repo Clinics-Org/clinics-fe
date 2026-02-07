@@ -1,14 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '../components/ui_old/Card';
-import { Input, Button } from '../components/ui_old';
 import { useClinic } from '../hooks/useClinic';
 import { authService } from '../services/authService';
-import { toast } from '../utils/toast';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/components/ui/toast';
 
 export default function SettingsScreen() {
   const navigate = useNavigate();
@@ -20,7 +17,10 @@ export default function SettingsScreen() {
 
   const handleLogout = () => {
     authService.logout();
-    toast.success('Logged out successfully');
+    toast.add({
+      type: 'success',
+      title: 'Logged out successfully',
+    });
     navigate('/login');
   };
 
@@ -28,61 +28,75 @@ export default function SettingsScreen() {
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-teal-900 mb-6">Settings</h1>
-        <Card className="border-teal-200">
-          <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100">
-            <CardTitle className="text-teal-900">Clinic Information</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-4">
+        <Card.Root className="border-teal-200">
+          <Card.Header className="bg-linear-to-r from-teal-50 to-white border-b border-teal-100">
+            <Card.Title className="text-teal-900">
+              Clinic Information
+            </Card.Title>
+          </Card.Header>
+          <Card.Panel className="pt-6 space-y-4">
             {loading ? (
               <div className="text-sm text-gray-600">
                 Loading clinic data...
               </div>
             ) : (
               <>
-                <Input
-                  label="Clinic Name"
-                  value={clinicName}
-                  disabled
-                  className="bg-gray-50"
-                />
-                {clinicAddress && (
+                <div className="flex flex-col items-start gap-2">
+                  <Label htmlFor="name">Clinic Name</Label>
                   <Input
-                    label="Address"
-                    value={clinicAddress}
+                    id="name"
+                    value={clinicName}
                     disabled
                     className="bg-gray-50"
                   />
+                </div>
+                {clinicAddress && (
+                  <div className="flex flex-col items-start gap-2">
+                    <Label htmlFor="Address">Address</Label>
+                    <Input
+                      id="Address"
+                      value={clinicAddress}
+                      disabled
+                      className="bg-gray-50"
+                    />
+                  </div>
                 )}
                 {clinicPhone && (
-                  <Input
-                    label="Phone"
-                    value={clinicPhone}
-                    disabled
-                    className="bg-gray-50"
-                  />
+                  <div className="flex flex-col items-start gap-2">
+                    <Label htmlFor="Phone">Phone</Label>
+                    <Input
+                      id="Phone"
+                      value={clinicPhone}
+                      disabled
+                      className="bg-gray-50"
+                    />
+                  </div>
                 )}
                 {clinicEmail && (
-                  <Input
-                    label="Email"
-                    value={clinicEmail}
-                    disabled
-                    className="bg-gray-50"
-                  />
+                  <div className="flex flex-col items-start gap-2">
+                    <Label htmlFor="Email">Email</Label>
+                    <Input
+                      id="Email"
+                      value={clinicEmail}
+                      disabled
+                      className="bg-gray-50"
+                    />
+                  </div>
                 )}
                 <p className="text-sm text-gray-600">
                   Clinic information is loaded from the API.
                 </p>
               </>
             )}
-          </CardContent>
-        </Card>
+          </Card.Panel>
+        </Card.Root>
 
         {/* Logout Section */}
-        <Card className="border-teal-200 mt-6">
-          <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100">
-            <CardTitle className="text-teal-900">Account</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
+        <Card.Root className="border-teal-200 mt-6">
+          <Card.Header className="bg-linear-to-r from-teal-50 to-white border-b border-teal-100">
+            <Card.Title className="text-teal-900">Account</Card.Title>
+          </Card.Header>
+          <Card.Panel className="pt-6">
             <Button
               variant="outline"
               onClick={handleLogout}
@@ -90,8 +104,8 @@ export default function SettingsScreen() {
             >
               Logout
             </Button>
-          </CardContent>
-        </Card>
+          </Card.Panel>
+        </Card.Root>
       </div>
     </div>
   );

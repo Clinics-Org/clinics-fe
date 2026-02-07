@@ -6,8 +6,11 @@ import { ChevronsUpDownIcon, XIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ComponentType } from 'react';
 
-const Autocomplete = AutocompletePrimitive.Root;
+function Root(props: ComponentType<typeof AutocompletePrimitive.Root>) {
+  return <AutocompletePrimitive.Root data-slot="autocomplete" {...props} />;
+}
 
 function AutocompleteInput({
   className,
@@ -50,30 +53,30 @@ function AutocompleteInput({
         {...props}
       />
       {showTrigger && (
-        <AutocompleteTrigger
+        <Trigger
           className={cn(
             "-translate-y-1/2 absolute top-1/2 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent opacity-80 outline-none transition-colors pointer-coarse:after:absolute pointer-coarse:after:min-h-11 pointer-coarse:after:min-w-11 hover:opacity-100 has-[+[data-slot=autocomplete-clear]]:hidden sm:size-7 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
             sizeValue === 'sm' ? 'end-0' : 'end-0.5',
           )}
         >
           <ChevronsUpDownIcon />
-        </AutocompleteTrigger>
+        </Trigger>
       )}
       {showClear && (
-        <AutocompleteClear
+        <Clear
           className={cn(
             "-translate-y-1/2 absolute top-1/2 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent opacity-80 outline-none transition-colors pointer-coarse:after:absolute pointer-coarse:after:min-h-11 pointer-coarse:after:min-w-11 hover:opacity-100 has-[+[data-slot=autocomplete-clear]]:hidden sm:size-7 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
             sizeValue === 'sm' ? 'end-0' : 'end-0.5',
           )}
         >
           <XIcon />
-        </AutocompleteClear>
+        </Clear>
       )}
     </div>
   );
 }
 
-function AutocompletePopup({
+function Popup({
   className,
   children,
   side = 'bottom',
@@ -116,7 +119,7 @@ function AutocompletePopup({
   );
 }
 
-function AutocompleteItem({
+function Item({
   className,
   children,
   ...props
@@ -135,7 +138,7 @@ function AutocompleteItem({
   );
 }
 
-function AutocompleteSeparator({
+function Separator({
   className,
   ...props
 }: AutocompletePrimitive.Separator.Props) {
@@ -148,10 +151,7 @@ function AutocompleteSeparator({
   );
 }
 
-function AutocompleteGroup({
-  className,
-  ...props
-}: AutocompletePrimitive.Group.Props) {
+function Group({ className, ...props }: AutocompletePrimitive.Group.Props) {
   return (
     <AutocompletePrimitive.Group
       className={cn('[[role=group]+&]:mt-1.5', className)}
@@ -161,7 +161,7 @@ function AutocompleteGroup({
   );
 }
 
-function AutocompleteGroupLabel({
+function GroupLabel({
   className,
   ...props
 }: AutocompletePrimitive.GroupLabel.Props) {
@@ -177,10 +177,7 @@ function AutocompleteGroupLabel({
   );
 }
 
-function AutocompleteEmpty({
-  className,
-  ...props
-}: AutocompletePrimitive.Empty.Props) {
+function Empty({ className, ...props }: AutocompletePrimitive.Empty.Props) {
   return (
     <AutocompletePrimitive.Empty
       className={cn(
@@ -193,10 +190,7 @@ function AutocompleteEmpty({
   );
 }
 
-function AutocompleteRow({
-  className,
-  ...props
-}: AutocompletePrimitive.Row.Props) {
+function Row({ className, ...props }: AutocompletePrimitive.Row.Props) {
   return (
     <AutocompletePrimitive.Row
       className={className}
@@ -206,18 +200,15 @@ function AutocompleteRow({
   );
 }
 
-function AutocompleteValue({ ...props }: AutocompletePrimitive.Value.Props) {
+function Value({ ...props }: AutocompletePrimitive.Value.Props) {
   return (
     <AutocompletePrimitive.Value data-slot="autocomplete-value" {...props} />
   );
 }
 
-function AutocompleteList({
-  className,
-  ...props
-}: AutocompletePrimitive.List.Props) {
+function List({ className, ...props }: AutocompletePrimitive.List.Props) {
   return (
-    <ScrollArea scrollbarGutter scrollFade>
+    <ScrollArea.Root scrollbarGutter scrollFade>
       <AutocompletePrimitive.List
         className={cn(
           'not-empty:scroll-py-1 not-empty:p-1 in-data-has-overflow-y:pe-3',
@@ -226,14 +217,12 @@ function AutocompleteList({
         data-slot="autocomplete-list"
         {...props}
       />
-    </ScrollArea>
+      <ScrollArea.Scrollbar />
+    </ScrollArea.Root>
   );
 }
 
-function AutocompleteClear({
-  className,
-  ...props
-}: AutocompletePrimitive.Clear.Props) {
+function Clear({ className, ...props }: AutocompletePrimitive.Clear.Props) {
   return (
     <AutocompletePrimitive.Clear
       className={cn(
@@ -248,10 +237,7 @@ function AutocompleteClear({
   );
 }
 
-function AutocompleteStatus({
-  className,
-  ...props
-}: AutocompletePrimitive.Status.Props) {
+function Status({ className, ...props }: AutocompletePrimitive.Status.Props) {
   return (
     <AutocompletePrimitive.Status
       className={cn(
@@ -264,9 +250,7 @@ function AutocompleteStatus({
   );
 }
 
-function AutocompleteCollection({
-  ...props
-}: AutocompletePrimitive.Collection.Props) {
+function Collection({ ...props }: AutocompletePrimitive.Collection.Props) {
   return (
     <AutocompletePrimitive.Collection
       data-slot="autocomplete-collection"
@@ -275,10 +259,7 @@ function AutocompleteCollection({
   );
 }
 
-function AutocompleteTrigger({
-  className,
-  ...props
-}: AutocompletePrimitive.Trigger.Props) {
+function Trigger({ className, ...props }: AutocompletePrimitive.Trigger.Props) {
   return (
     <AutocompletePrimitive.Trigger
       className={className}
@@ -290,21 +271,22 @@ function AutocompleteTrigger({
 
 const useAutocompleteFilter = AutocompletePrimitive.useFilter;
 
-export {
-  Autocomplete,
-  AutocompleteInput,
-  AutocompleteTrigger,
-  AutocompletePopup,
-  AutocompleteItem,
-  AutocompleteSeparator,
-  AutocompleteGroup,
-  AutocompleteGroupLabel,
-  AutocompleteEmpty,
-  AutocompleteValue,
-  AutocompleteList,
-  AutocompleteClear,
-  AutocompleteStatus,
-  AutocompleteRow,
-  AutocompleteCollection,
-  useAutocompleteFilter,
+export const Autocomplete = {
+  Root,
+  Input: AutocompleteInput,
+  Trigger,
+  Popup,
+  Item,
+  Separator,
+  Group,
+  GroupLabel,
+  Empty,
+  Value,
+  List,
+  Clear,
+  Status,
+  Row,
+  Collection,
 };
+
+export { useAutocompleteFilter };

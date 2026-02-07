@@ -1,17 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Input,
-  Button,
-  Modal,
-  DatePicker,
-  Select,
-  SelectItem,
-} from '../components/ui_old';
-import { Card, CardContent } from '../components/ui_old/Card';
 import { patientService } from '../services/patientService';
 import { visitService } from '../services/visitService';
-import { toast } from '../utils/toast';
 import type { Patient, Visit, ClinicDoctor } from '../types';
 import { clinicService } from '../services/clinicService';
 import {
@@ -23,6 +13,14 @@ import {
   getErrorMessage,
   hasValidationErrors,
 } from '../utils/errorHandler';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Card } from '@/components/ui/card';
+import { Dialog } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import { toast } from '@/components/ui/toast';
 
 export default function VisitsScreen() {
   const navigate = useNavigate();
@@ -143,7 +141,10 @@ export default function VisitsScreen() {
       setFilteredVisits(result.visits);
     } catch (error) {
       console.error('❌ Failed to load visits:', error);
-      toast.error('Failed to load visits');
+      toast.add({
+        type: 'error',
+        title: 'Failed to load visits',
+      });
     } finally {
       setLoading(false);
     }
@@ -208,7 +209,10 @@ export default function VisitsScreen() {
       }
     } catch (error) {
       console.error('❌ Error searching patient:', error);
-      toast.error('Failed to search patient');
+      toast.add({
+        type: 'error',
+        title: 'Failed to search patient',
+      });
     } finally {
       setSearching(false);
     }
@@ -285,7 +289,10 @@ export default function VisitsScreen() {
       });
 
       console.log('✅ Visit created:', visit.id);
-      toast.success('Visit created successfully!');
+      toast.add({
+        type: 'success',
+        title: 'Visit created successfully!',
+      });
       setIsModalOpen(false);
 
       // Reload visits and navigate
@@ -310,10 +317,16 @@ export default function VisitsScreen() {
         }
 
         // Show general error message
-        toast.error(getErrorMessage(error));
+        toast.add({
+          type: 'error',
+          title: getErrorMessage(error),
+        });
       } else {
         // Show general error message
-        toast.error(getErrorMessage(error));
+        toast.add({
+          type: 'error',
+          title: getErrorMessage(error),
+        });
       }
     }
   };
@@ -398,7 +411,8 @@ export default function VisitsScreen() {
           {/* Doctor Filter */}
           {doctors.length > 0 && (
             <div className="sm:w-48 md:w-56">
-              <Select
+              {/* TODO: */}
+              {/* <Select
                 value={selectedDoctorFilter || undefined}
                 onValueChange={(value) => setSelectedDoctorFilter(value || '')}
                 placeholder="All Doctors"
@@ -410,13 +424,14 @@ export default function VisitsScreen() {
                     {doc.name}
                   </SelectItem>
                 ))}
-              </Select>
+              </Select> */}
             </div>
           )}
 
           {/* Visit Status Filter */}
           <div className="sm:w-48 md:w-56">
-            <Select
+            {/* TODO */}
+            {/* <Select
               value={selectedVisitStatus}
               onValueChange={(value) => setSelectedVisitStatus(value)}
               placeholder="All Statuses"
@@ -426,19 +441,19 @@ export default function VisitsScreen() {
               <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
               <SelectItem value="COMPLETED">Completed</SelectItem>
               <SelectItem value="CANCELLED">Cancelled</SelectItem>
-            </Select>
+            </Select> */}
           </div>
         </div>
 
         {filteredVisits.length > 0 ? (
           <div className="grid gap-3">
             {filteredVisits.map((visit) => (
-              <Card
+              <Card.Root
                 key={visit.id}
                 className="border-teal-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
                 onClick={() => handleVisitClick(visit)}
               >
-                <CardContent className="p-3 md:p-5">
+                <Card.Panel className="p-3 md:p-5">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
                       {/* Avatar */}
@@ -489,13 +504,13 @@ export default function VisitsScreen() {
                       </span>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </Card.Panel>
+              </Card.Root>
             ))}
           </div>
         ) : (
-          <Card className="border-teal-200">
-            <CardContent className="p-12 text-center">
+          <Card.Root className="border-teal-200">
+            <Card.Panel className="p-12 text-center">
               <div className="text-gray-500">
                 {searchQuery ? (
                   <>
@@ -512,25 +527,206 @@ export default function VisitsScreen() {
                   </>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </Card.Panel>
+          </Card.Root>
         )}
       </div>
 
       {/* Create Visit Modal */}
-      <Modal
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        title={
-          step === 'mobile'
-            ? 'Create Visit'
-            : foundPatient
-              ? 'Create Visit - Patient Found'
-              : 'Create Visit - New Patient'
-        }
-        size="lg"
-        footer={
-          <>
+      <Dialog.Root open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <Dialog.Popup>
+          <Dialog.Header>
+            <Dialog.Title>
+              {step === 'mobile' ? 'Search Patient' : 'Create Visit'}
+            </Dialog.Title>
+          </Dialog.Header>
+
+          <Dialog.Panel>
+            {step === 'mobile' ? (
+              <div className="space-y-5">
+                <div className="flex flex-col items-start gap-2">
+                  <Label htmlFor="mobile">Mobile *</Label>
+                  <Input
+                    id="mobile"
+                    type="tel"
+                    value={mobileNumber}
+                    placeholder="Enter mobile number (e.g., +91 9876543210)"
+                    autoFocus
+                    onChange={(e) => {
+                      setMobileNumber(formatPhoneInput(e.target.value));
+                      setErrors({});
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && mobileNumber.trim()) {
+                        handleSearchPatient();
+                      }
+                    }}
+                  />
+                  {errors.mobile && (
+                    <p className="text-sm text-red-500">{errors.mobile}</p>
+                  )}
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                  Enter the patient's mobile number to search. If the patient
+                  exists, we’ll use their information. Otherwise, you’ll be
+                  asked to enter their details.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {foundPatient && (
+                  <div className="rounded-md border p-3 text-sm text-green-600">
+                    ✓ Patient found in database
+                    <div className="font-medium">
+                      {foundPatient.name} • {foundPatient.mobile}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col items-start gap-2">
+                  <Label htmlFor="name">Name *</Label>
+                  <Input
+                    id="name"
+                    value={newPatient.name}
+                    placeholder="Enter patient name"
+                    disabled={!!foundPatient}
+                    autoFocus={!foundPatient}
+                    onChange={(e) =>
+                      setNewPatient({ ...newPatient, name: e.target.value })
+                    }
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-red-500">{errors.name}</p>
+                  )}
+                </div>
+
+                <div className="flex flex-col items-start gap-2">
+                  <Label htmlFor="patient-mobile">Mobile *</Label>
+                  <Input
+                    id="patient-mobile"
+                    type="tel"
+                    value={newPatient.mobile}
+                    placeholder="Enter mobile number (e.g., +91 9876543210)"
+                    disabled={!!foundPatient}
+                    onChange={(e) =>
+                      setNewPatient({
+                        ...newPatient,
+                        mobile: formatPhoneInput(e.target.value),
+                      })
+                    }
+                  />
+                  {errors.mobile && (
+                    <p className="text-sm text-red-500">{errors.mobile}</p>
+                  )}
+                </div>
+
+                <div className="flex flex-col items-start gap-2">
+                  <Label htmlFor="age">Age</Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    min="0"
+                    value={newPatient.age}
+                    placeholder="Enter age (optional)"
+                    onChange={(e) =>
+                      setNewPatient({ ...newPatient, age: e.target.value })
+                    }
+                  />
+                  {errors.age && (
+                    <p className="text-sm text-red-500">{errors.age}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Gender *</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="M"
+                        checked={newPatient.gender === 'M'}
+                        disabled={!!foundPatient}
+                        onChange={(e) =>
+                          setNewPatient({
+                            ...newPatient,
+                            gender: e.target.value as 'M' | 'F',
+                          })
+                        }
+                        className="mr-2"
+                      />
+                      Male
+                    </label>
+
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="F"
+                        checked={newPatient.gender === 'F'}
+                        disabled={!!foundPatient}
+                        onChange={(e) =>
+                          setNewPatient({
+                            ...newPatient,
+                            gender: e.target.value as 'M' | 'F',
+                          })
+                        }
+                        className="mr-2"
+                      />
+                      Female
+                    </label>
+                  </div>
+
+                  {errors.gender && (
+                    <p className="text-sm text-red-500">{errors.gender}</p>
+                  )}
+                </div>
+
+                <div className="flex flex-col items-start gap-2">
+                  <Label htmlFor="reason">Visit Reason</Label>
+                  <Input
+                    id="reason"
+                    value={visitReason}
+                    placeholder="e.g., General consultation, Follow-up"
+                    onChange={(e) => setVisitReason(e.target.value)}
+                  />
+                </div>
+
+                {doctors.length > 1 && (
+                  <div className="flex flex-col items-start gap-2">
+                    <Label>Select Doctor *</Label>
+                    <Select.Root
+                      value={selectedDoctorId}
+                      onValueChange={(value) => {
+                        if (value) {
+                          setSelectedDoctorId(value);
+                          setDoctorError('');
+                        }
+                      }}
+                    >
+                      <Select.Trigger className="w-full">
+                        <Select.Value placeholder="Select doctor" />
+                      </Select.Trigger>
+                      <Select.Popup>
+                        {doctors.map((doc) => (
+                          <Select.Item key={doc.id} value={doc.id}>
+                            {doc.name}
+                          </Select.Item>
+                        ))}
+                      </Select.Popup>
+                    </Select.Root>
+
+                    {doctorError && (
+                      <p className="text-sm text-red-500">{doctorError}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </Dialog.Panel>
+
+          <Dialog.Footer>
             <Button
               variant="outline"
               onClick={() => {
@@ -544,176 +740,22 @@ export default function VisitsScreen() {
             >
               {step === 'mobile' ? 'Cancel' : 'Back'}
             </Button>
-            <Button onClick={handleCreateVisitSubmit} disabled={searching}>
+
+            <Button
+              onClick={() => {
+                step === 'mobile' ? handleSearchPatient() : handleCreateVisit();
+              }}
+              disabled={searching}
+            >
               {searching
                 ? 'Searching...'
                 : step === 'mobile'
                   ? 'Search'
                   : 'Create Visit'}
             </Button>
-          </>
-        }
-      >
-        <div className="space-y-5">
-          {step === 'mobile' ? (
-            <>
-              <Input
-                label="Mobile Number *"
-                type="tel"
-                value={mobileNumber}
-                onChange={(e) => {
-                  setMobileNumber(formatPhoneInput(e.target.value));
-                  setErrors({});
-                }}
-                error={errors.mobile}
-                placeholder="Enter mobile number (e.g., +91 9876543210)"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && mobileNumber.trim()) {
-                    handleSearchPatient();
-                  }
-                }}
-              />
-              <p className="text-sm text-gray-600">
-                Enter the patient's mobile number to search. If the patient
-                exists, we'll use their information. Otherwise, you'll be asked
-                to enter their details.
-              </p>
-            </>
-          ) : (
-            <>
-              {foundPatient && (
-                <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg mb-4">
-                  <p className="text-sm text-teal-800 font-medium">
-                    ✓ Patient found in database
-                  </p>
-                  <p className="text-xs text-teal-600 mt-1">
-                    {foundPatient.name} • {foundPatient.mobile}
-                  </p>
-                </div>
-              )}
-
-              <Input
-                label="Name *"
-                value={newPatient.name}
-                onChange={(e) =>
-                  setNewPatient({ ...newPatient, name: e.target.value })
-                }
-                error={errors.name}
-                placeholder="Enter patient name"
-                disabled={!!foundPatient}
-                autoFocus={!foundPatient}
-              />
-
-              <Input
-                label="Mobile *"
-                type="tel"
-                value={newPatient.mobile}
-                onChange={(e) =>
-                  setNewPatient({
-                    ...newPatient,
-                    mobile: formatPhoneInput(e.target.value),
-                  })
-                }
-                error={errors.mobile}
-                placeholder="Enter mobile number (e.g., +91 9876543210)"
-                disabled={!!foundPatient}
-              />
-
-              <Input
-                label="Age"
-                type="number"
-                value={newPatient.age}
-                onChange={(e) =>
-                  setNewPatient({ ...newPatient, age: e.target.value })
-                }
-                error={errors.age}
-                placeholder="Enter age (optional)"
-                min="0"
-              />
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Gender *
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="M"
-                      checked={newPatient.gender === 'M'}
-                      onChange={(e) =>
-                        setNewPatient({
-                          ...newPatient,
-                          gender: e.target.value as 'M' | 'F',
-                        })
-                      }
-                      className="mr-2"
-                      disabled={!!foundPatient}
-                    />
-                    Male
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="F"
-                      checked={newPatient.gender === 'F'}
-                      onChange={(e) =>
-                        setNewPatient({
-                          ...newPatient,
-                          gender: e.target.value as 'M' | 'F',
-                        })
-                      }
-                      className="mr-2"
-                      disabled={!!foundPatient}
-                    />
-                    Female
-                  </label>
-                </div>
-                {errors.gender && (
-                  <p className="mt-1 text-sm text-red-600">{errors.gender}</p>
-                )}
-              </div>
-
-              <Input
-                label="Visit Reason (Optional)"
-                value={visitReason}
-                onChange={(e) => setVisitReason(e.target.value)}
-                placeholder="e.g., General consultation, Follow-up, etc."
-              />
-
-              {/* Doctor Selection - Only show if more than one doctor */}
-              {doctors.length > 1 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Doctor *
-                  </label>
-                  <Select
-                    value={selectedDoctorId || undefined}
-                    onValueChange={(value) => {
-                      setSelectedDoctorId(value || '');
-                      setDoctorError('');
-                    }}
-                    placeholder="Select doctor"
-                    className="w-full"
-                  >
-                    {doctors.map((doc) => (
-                      <SelectItem key={doc.id} value={doc.id}>
-                        {doc.name}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                  {doctorError && (
-                    <p className="mt-1 text-sm text-red-600">{doctorError}</p>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </Modal>
+          </Dialog.Footer>
+        </Dialog.Popup>
+      </Dialog.Root>
     </div>
   );
 }

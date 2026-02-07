@@ -4,14 +4,11 @@ import { Collapsible as CollapsiblePrimitive } from '@base-ui/react/collapsible'
 
 import { cn } from '@/lib/utils';
 
-function Collapsible({ ...props }: CollapsiblePrimitive.Root.Props) {
+function Root({ ...props }: CollapsiblePrimitive.Root.Props) {
   return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />;
 }
 
-function CollapsibleTrigger({
-  className,
-  ...props
-}: CollapsiblePrimitive.Trigger.Props) {
+function Trigger({ className, ...props }: CollapsiblePrimitive.Trigger.Props) {
   return (
     <CollapsiblePrimitive.Trigger
       className={cn('cursor-pointer', className)}
@@ -21,10 +18,7 @@ function CollapsibleTrigger({
   );
 }
 
-function CollapsiblePanel({
-  className,
-  ...props
-}: CollapsiblePrimitive.Panel.Props) {
+function Panel({ className, ...props }: CollapsiblePrimitive.Panel.Props) {
   return (
     <CollapsiblePrimitive.Panel
       className={cn(
@@ -37,9 +31,4 @@ function CollapsiblePanel({
   );
 }
 
-export {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsiblePanel,
-  CollapsiblePanel as CollapsibleContent,
-};
+export const Collapsible = { Root, Trigger, Panel };

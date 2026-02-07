@@ -1,6 +1,6 @@
 'use client';
 
-import { Select as SelectPrimitive } from '@base-ui/react/select';
+import { Select as SelectPrimitive, SelectRoot } from '@base-ui/react/select';
 import {
   ChevronDownIcon,
   ChevronsUpDownIcon,
@@ -9,9 +9,13 @@ import {
 
 import { cn } from '@/lib/utils';
 
-const Select = SelectPrimitive.Root;
+function Root<Value, Multiple extends boolean | undefined = false>(
+  props: SelectRoot.Props<Value, Multiple>,
+) {
+  return <SelectPrimitive.Root {...props} />;
+}
 
-function SelectTrigger({
+function Trigger({
   className,
   size = 'default',
   children,
@@ -39,7 +43,7 @@ function SelectTrigger({
   );
 }
 
-function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
+function Value({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
       className={cn(
@@ -52,7 +56,7 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   );
 }
 
-function SelectPopup({
+function Popup({
   className,
   children,
   side = 'bottom',
@@ -113,11 +117,7 @@ function SelectPopup({
   );
 }
 
-function SelectItem({
-  className,
-  children,
-  ...props
-}: SelectPrimitive.Item.Props) {
+function Item({ className, children, ...props }: SelectPrimitive.Item.Props) {
   return (
     <SelectPrimitive.Item
       className={cn(
@@ -149,10 +149,7 @@ function SelectItem({
   );
 }
 
-function SelectSeparator({
-  className,
-  ...props
-}: SelectPrimitive.Separator.Props) {
+function Separator({ className, ...props }: SelectPrimitive.Separator.Props) {
   return (
     <SelectPrimitive.Separator
       className={cn('mx-2 my-1 h-px bg-border', className)}
@@ -162,11 +159,11 @@ function SelectSeparator({
   );
 }
 
-function SelectGroup(props: SelectPrimitive.Group.Props) {
+function Group(props: SelectPrimitive.Group.Props) {
   return <SelectPrimitive.Group data-slot="select-group" {...props} />;
 }
 
-function SelectGroupLabel(props: SelectPrimitive.GroupLabel.Props) {
+function GroupLabel(props: SelectPrimitive.GroupLabel.Props) {
   return (
     <SelectPrimitive.GroupLabel
       className="px-2 py-1.5 font-medium text-muted-foreground text-xs"
@@ -176,14 +173,13 @@ function SelectGroupLabel(props: SelectPrimitive.GroupLabel.Props) {
   );
 }
 
-export {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectPopup,
-  SelectPopup as SelectContent,
-  SelectItem,
-  SelectSeparator,
-  SelectGroup,
-  SelectGroupLabel,
+export const Select = {
+  Root,
+  Trigger,
+  Value,
+  Popup,
+  Item,
+  Separator,
+  Group,
+  GroupLabel,
 };

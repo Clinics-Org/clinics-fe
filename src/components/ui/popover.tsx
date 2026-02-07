@@ -4,15 +4,17 @@ import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 
 import { cn } from '@/lib/utils';
 
-const PopoverCreateHandle = PopoverPrimitive.createHandle;
+const createHandle = PopoverPrimitive.createHandle;
 
-const Popover = PopoverPrimitive.Root;
+function Root(props: PopoverPrimitive.Root.Props) {
+  return <PopoverPrimitive.Root {...props} />;
+}
 
-function PopoverTrigger(props: PopoverPrimitive.Trigger.Props) {
+function Trigger(props: PopoverPrimitive.Trigger.Props) {
   return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
 }
 
-function PopoverPopup({
+function Popup({
   children,
   className,
   side = 'bottom',
@@ -65,11 +67,11 @@ function PopoverPopup({
   );
 }
 
-function PopoverClose({ ...props }: PopoverPrimitive.Close.Props) {
+function Close({ ...props }: PopoverPrimitive.Close.Props) {
   return <PopoverPrimitive.Close data-slot="popover-close" {...props} />;
 }
 
-function PopoverTitle({ className, ...props }: PopoverPrimitive.Title.Props) {
+function Title({ className, ...props }: PopoverPrimitive.Title.Props) {
   return (
     <PopoverPrimitive.Title
       className={cn('font-semibold text-lg leading-none', className)}
@@ -79,7 +81,7 @@ function PopoverTitle({ className, ...props }: PopoverPrimitive.Title.Props) {
   );
 }
 
-function PopoverDescription({
+function Description({
   className,
   ...props
 }: PopoverPrimitive.Description.Props) {
@@ -92,13 +94,12 @@ function PopoverDescription({
   );
 }
 
-export {
-  PopoverCreateHandle,
-  Popover,
-  PopoverTrigger,
-  PopoverPopup,
-  PopoverPopup as PopoverContent,
-  PopoverTitle,
-  PopoverDescription,
-  PopoverClose,
+export const Popover = {
+  createHandle,
+  Root,
+  Trigger,
+  Popup,
+  Title,
+  Description,
+  Close,
 };

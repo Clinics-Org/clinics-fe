@@ -7,11 +7,11 @@ import type * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
-function Breadcrumb({ ...props }: React.ComponentProps<'nav'>) {
+function Root({ ...props }: React.ComponentProps<'nav'>) {
   return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />;
 }
 
-function BreadcrumbList({ className, ...props }: React.ComponentProps<'ol'>) {
+function List({ className, ...props }: React.ComponentProps<'ol'>) {
   return (
     <ol
       className={cn(
@@ -24,7 +24,7 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<'ol'>) {
   );
 }
 
-function BreadcrumbItem({ className, ...props }: React.ComponentProps<'li'>) {
+function Item({ className, ...props }: React.ComponentProps<'li'>) {
   return (
     <li
       className={cn('inline-flex items-center gap-1.5', className)}
@@ -34,11 +34,7 @@ function BreadcrumbItem({ className, ...props }: React.ComponentProps<'li'>) {
   );
 }
 
-function BreadcrumbLink({
-  className,
-  render,
-  ...props
-}: useRender.ComponentProps<'a'>) {
+function Link({ className, render, ...props }: useRender.ComponentProps<'a'>) {
   const defaultProps = {
     className: cn('transition-colors hover:text-foreground', className),
     'data-slot': 'breadcrumb-link',
@@ -51,7 +47,7 @@ function BreadcrumbLink({
   });
 }
 
-function BreadcrumbPage({ className, ...props }: React.ComponentProps<'span'>) {
+function Page({ className, ...props }: React.ComponentProps<'span'>) {
   return (
     // biome-ignore lint(a11y/useFocusableInteractive): known
     <span
@@ -65,7 +61,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<'span'>) {
   );
 }
 
-function BreadcrumbSeparator({
+function Separator({
   children,
   className,
   ...props
@@ -83,10 +79,7 @@ function BreadcrumbSeparator({
   );
 }
 
-function BreadcrumbEllipsis({
-  className,
-  ...props
-}: React.ComponentProps<'span'>) {
+function Ellipsis({ className, ...props }: React.ComponentProps<'span'>) {
   return (
     <span
       aria-hidden="true"
@@ -101,12 +94,12 @@ function BreadcrumbEllipsis({
   );
 }
 
-export {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-  BreadcrumbEllipsis,
+export const Breadcrumb = {
+  Root,
+  List,
+  Item,
+  Link,
+  Page,
+  Separator,
+  Ellipsis,
 };

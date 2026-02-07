@@ -6,24 +6,23 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-const DialogCreateHandle = DialogPrimitive.createHandle;
+const createHandle = DialogPrimitive.createHandle;
 
-const Dialog = DialogPrimitive.Root;
+function Root(props: DialogPrimitive.Root.Props) {
+  return <DialogPrimitive.Root {...props} />;
+}
 
-const DialogPortal = DialogPrimitive.Portal;
+const Portal = DialogPrimitive.Portal;
 
-function DialogTrigger(props: DialogPrimitive.Trigger.Props) {
+function Trigger(props: DialogPrimitive.Trigger.Props) {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
-function DialogClose(props: DialogPrimitive.Close.Props) {
+function Close(props: DialogPrimitive.Close.Props) {
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
-function DialogBackdrop({
-  className,
-  ...props
-}: DialogPrimitive.Backdrop.Props) {
+function Backdrop({ className, ...props }: DialogPrimitive.Backdrop.Props) {
   return (
     <DialogPrimitive.Backdrop
       className={cn(
@@ -36,10 +35,7 @@ function DialogBackdrop({
   );
 }
 
-function DialogViewport({
-  className,
-  ...props
-}: DialogPrimitive.Viewport.Props) {
+function Viewport({ className, ...props }: DialogPrimitive.Viewport.Props) {
   return (
     <DialogPrimitive.Viewport
       className={cn(
@@ -52,7 +48,7 @@ function DialogViewport({
   );
 }
 
-function DialogPopup({
+function Popup({
   className,
   children,
   showCloseButton = true,
@@ -63,9 +59,9 @@ function DialogPopup({
   bottomStickOnMobile?: boolean;
 }) {
   return (
-    <DialogPortal>
-      <DialogBackdrop />
-      <DialogViewport
+    <Portal>
+      <Backdrop />
+      <Viewport
         className={cn(
           bottomStickOnMobile &&
             'max-sm:grid-rows-[1fr_auto] max-sm:p-0 max-sm:pt-12',
@@ -92,12 +88,12 @@ function DialogPopup({
             </DialogPrimitive.Close>
           )}
         </DialogPrimitive.Popup>
-      </DialogViewport>
-    </DialogPortal>
+      </Viewport>
+    </Portal>
   );
 }
 
-function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
+function Header({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
@@ -110,7 +106,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function DialogFooter({
+function Footer({
   className,
   variant = 'default',
   ...props
@@ -132,7 +128,7 @@ function DialogFooter({
   );
 }
 
-function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
+function Title({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       className={cn(
@@ -145,7 +141,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   );
 }
 
-function DialogDescription({
+function Description({
   className,
   ...props
 }: DialogPrimitive.Description.Props) {
@@ -158,13 +154,13 @@ function DialogDescription({
   );
 }
 
-function DialogPanel({
+function Panel({
   className,
   scrollFade = true,
   ...props
 }: React.ComponentProps<'div'> & { scrollFade?: boolean }) {
   return (
-    <ScrollArea scrollFade={scrollFade}>
+    <ScrollArea.Root scrollFade={scrollFade}>
       <div
         className={cn(
           'p-6 in-[[data-slot=dialog-popup]:has([data-slot=dialog-header])]:pt-1 in-[[data-slot=dialog-popup]:has([data-slot=dialog-footer]:not(.border-t))]:pb-1',
@@ -173,24 +169,22 @@ function DialogPanel({
         data-slot="dialog-panel"
         {...props}
       />
-    </ScrollArea>
+    </ScrollArea.Root>
   );
 }
 
-export {
-  DialogCreateHandle,
-  Dialog,
-  DialogTrigger,
-  DialogPortal,
-  DialogClose,
-  DialogBackdrop,
-  DialogBackdrop as DialogOverlay,
-  DialogPopup,
-  DialogPopup as DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
-  DialogPanel,
-  DialogViewport,
+export const Dialog = {
+  createHandle,
+  Root,
+  Trigger,
+  Portal,
+  Close,
+  Backdrop,
+  Viewport,
+  Popup,
+  Header,
+  Footer,
+  Title,
+  Description,
+  Panel,
 };

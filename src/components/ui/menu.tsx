@@ -5,17 +5,19 @@ import { ChevronRightIcon } from 'lucide-react';
 import type * as React from 'react';
 import { cn } from '@/lib/utils';
 
-const MenuCreateHandle = MenuPrimitive.createHandle;
+const createHandle = MenuPrimitive.createHandle;
 
-const Menu = MenuPrimitive.Root;
+function Root(props: MenuPrimitive.Root.Props) {
+  return <MenuPrimitive.Root {...props} />;
+}
 
-const MenuPortal = MenuPrimitive.Portal;
+const Portal = MenuPrimitive.Portal;
 
-function MenuTrigger(props: MenuPrimitive.Trigger.Props) {
+function Trigger(props: MenuPrimitive.Trigger.Props) {
   return <MenuPrimitive.Trigger data-slot="menu-trigger" {...props} />;
 }
 
-function MenuPopup({
+function Popup({
   children,
   className,
   sideOffset = 4,
@@ -56,11 +58,11 @@ function MenuPopup({
   );
 }
 
-function MenuGroup(props: MenuPrimitive.Group.Props) {
+function Group(props: MenuPrimitive.Group.Props) {
   return <MenuPrimitive.Group data-slot="menu-group" {...props} />;
 }
 
-function MenuItem({
+function Item({
   className,
   inset,
   variant = 'default',
@@ -83,7 +85,7 @@ function MenuItem({
   );
 }
 
-function MenuCheckboxItem({
+function CheckboxItem({
   className,
   children,
   checked,
@@ -139,11 +141,11 @@ function MenuCheckboxItem({
   );
 }
 
-function MenuRadioGroup(props: MenuPrimitive.RadioGroup.Props) {
+function RadioGroup(props: MenuPrimitive.RadioGroup.Props) {
   return <MenuPrimitive.RadioGroup data-slot="menu-radio-group" {...props} />;
 }
 
-function MenuRadioItem({
+function RadioItem({
   className,
   children,
   ...props
@@ -177,7 +179,7 @@ function MenuRadioItem({
   );
 }
 
-function MenuGroupLabel({
+function GroupLabel({
   className,
   inset,
   ...props
@@ -197,7 +199,7 @@ function MenuGroupLabel({
   );
 }
 
-function MenuSeparator({ className, ...props }: MenuPrimitive.Separator.Props) {
+function Separator({ className, ...props }: MenuPrimitive.Separator.Props) {
   return (
     <MenuPrimitive.Separator
       className={cn('mx-2 my-1 h-px bg-border', className)}
@@ -207,7 +209,7 @@ function MenuSeparator({ className, ...props }: MenuPrimitive.Separator.Props) {
   );
 }
 
-function MenuShortcut({ className, ...props }: React.ComponentProps<'kbd'>) {
+function Shortcut({ className, ...props }: React.ComponentProps<'kbd'>) {
   return (
     <kbd
       className={cn(
@@ -220,11 +222,11 @@ function MenuShortcut({ className, ...props }: React.ComponentProps<'kbd'>) {
   );
 }
 
-function MenuSub(props: MenuPrimitive.SubmenuRoot.Props) {
+function Sub(props: MenuPrimitive.SubmenuRoot.Props) {
   return <MenuPrimitive.SubmenuRoot data-slot="menu-sub" {...props} />;
 }
 
-function MenuSubTrigger({
+function SubTrigger({
   className,
   inset,
   children,
@@ -248,7 +250,7 @@ function MenuSubTrigger({
   );
 }
 
-function MenuSubPopup({
+function SubPopup({
   className,
   sideOffset = 0,
   alignOffset,
@@ -262,7 +264,7 @@ function MenuSubPopup({
   const defaultAlignOffset = align !== 'center' ? -5 : undefined;
 
   return (
-    <MenuPopup
+    <Popup
       align={align}
       alignOffset={alignOffset ?? defaultAlignOffset}
       className={className}
@@ -274,37 +276,21 @@ function MenuSubPopup({
   );
 }
 
-export {
-  MenuCreateHandle,
-  MenuCreateHandle as DropdownMenuCreateHandle,
-  Menu,
-  Menu as DropdownMenu,
-  MenuPortal,
-  MenuPortal as DropdownMenuPortal,
-  MenuTrigger,
-  MenuTrigger as DropdownMenuTrigger,
-  MenuPopup,
-  MenuPopup as DropdownMenuContent,
-  MenuGroup,
-  MenuGroup as DropdownMenuGroup,
-  MenuItem,
-  MenuItem as DropdownMenuItem,
-  MenuCheckboxItem,
-  MenuCheckboxItem as DropdownMenuCheckboxItem,
-  MenuRadioGroup,
-  MenuRadioGroup as DropdownMenuRadioGroup,
-  MenuRadioItem,
-  MenuRadioItem as DropdownMenuRadioItem,
-  MenuGroupLabel,
-  MenuGroupLabel as DropdownMenuLabel,
-  MenuSeparator,
-  MenuSeparator as DropdownMenuSeparator,
-  MenuShortcut,
-  MenuShortcut as DropdownMenuShortcut,
-  MenuSub,
-  MenuSub as DropdownMenuSub,
-  MenuSubTrigger,
-  MenuSubTrigger as DropdownMenuSubTrigger,
-  MenuSubPopup,
-  MenuSubPopup as DropdownMenuSubContent,
+export const Menu = {
+  createHandle,
+  Root,
+  Portal,
+  Trigger,
+  Popup,
+  Group,
+  Item,
+  CheckboxItem,
+  RadioGroup,
+  RadioItem,
+  GroupLabel,
+  Separator,
+  Shortcut,
+  Sub,
+  SubTrigger,
+  SubPopup,
 };

@@ -6,19 +6,19 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-const Sheet = SheetPrimitive.Root;
+const Root = SheetPrimitive.Root;
 
-const SheetPortal = SheetPrimitive.Portal;
+const Portal = SheetPrimitive.Portal;
 
-function SheetTrigger(props: SheetPrimitive.Trigger.Props) {
+function Trigger(props: SheetPrimitive.Trigger.Props) {
   return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />;
 }
 
-function SheetClose(props: SheetPrimitive.Close.Props) {
+function Close(props: SheetPrimitive.Close.Props) {
   return <SheetPrimitive.Close data-slot="sheet-close" {...props} />;
 }
 
-function SheetBackdrop({ className, ...props }: SheetPrimitive.Backdrop.Props) {
+function Backdrop({ className, ...props }: SheetPrimitive.Backdrop.Props) {
   return (
     <SheetPrimitive.Backdrop
       className={cn(
@@ -31,7 +31,7 @@ function SheetBackdrop({ className, ...props }: SheetPrimitive.Backdrop.Props) {
   );
 }
 
-function SheetViewport({
+function Viewport({
   className,
   side,
   variant = 'default',
@@ -56,7 +56,7 @@ function SheetViewport({
   );
 }
 
-function SheetPopup({
+function Popup({
   className,
   children,
   showCloseButton = true,
@@ -69,9 +69,9 @@ function SheetPopup({
   variant?: 'default' | 'inset';
 }) {
   return (
-    <SheetPortal>
-      <SheetBackdrop />
-      <SheetViewport side={side} variant={variant}>
+    <Portal>
+      <Backdrop />
+      <Viewport side={side} variant={variant}>
         <SheetPrimitive.Popup
           className={cn(
             'relative flex max-h-full min-h-0 w-full min-w-0 flex-col bg-popover not-dark:bg-clip-padding text-popover-foreground shadow-lg/5 transition-[opacity,translate] duration-200 ease-in-out will-change-transform before:pointer-events-none before:absolute before:inset-0 before:shadow-[0_1px_--theme(--color-black/4%)] data-ending-style:opacity-0 data-starting-style:opacity-0 max-sm:before:hidden dark:before:shadow-[0_-1px_--theme(--color-white/6%)]',
@@ -101,12 +101,12 @@ function SheetPopup({
             </SheetPrimitive.Close>
           )}
         </SheetPrimitive.Popup>
-      </SheetViewport>
-    </SheetPortal>
+      </Viewport>
+    </Portal>
   );
 }
 
-function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
+function Header({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
@@ -119,7 +119,7 @@ function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function SheetFooter({
+function Footer({
   className,
   variant = 'default',
   ...props
@@ -141,7 +141,7 @@ function SheetFooter({
   );
 }
 
-function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
+function Title({ className, ...props }: SheetPrimitive.Title.Props) {
   return (
     <SheetPrimitive.Title
       className={cn(
@@ -154,7 +154,7 @@ function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
   );
 }
 
-function SheetDescription({
+function Description({
   className,
   ...props
 }: SheetPrimitive.Description.Props) {
@@ -167,13 +167,13 @@ function SheetDescription({
   );
 }
 
-function SheetPanel({
+function Panel({
   className,
   scrollFade = true,
   ...props
 }: React.ComponentProps<'div'> & { scrollFade?: boolean }) {
   return (
-    <ScrollArea scrollFade={scrollFade}>
+    <ScrollArea.Root scrollFade={scrollFade}>
       <div
         className={cn(
           'p-6 in-[[data-slot=sheet-popup]:has([data-slot=sheet-header])]:pt-1 in-[[data-slot=sheet-popup]:has([data-slot=sheet-footer]:not(.border-t))]:pb-1',
@@ -182,22 +182,20 @@ function SheetPanel({
         data-slot="sheet-panel"
         {...props}
       />
-    </ScrollArea>
+    </ScrollArea.Root>
   );
 }
 
-export {
-  Sheet,
-  SheetTrigger,
-  SheetPortal,
-  SheetClose,
-  SheetBackdrop,
-  SheetBackdrop as SheetOverlay,
-  SheetPopup,
-  SheetPopup as SheetContent,
-  SheetHeader,
-  SheetFooter,
-  SheetTitle,
-  SheetDescription,
-  SheetPanel,
+export const Sheet = {
+  Root,
+  Trigger,
+  Portal,
+  Close,
+  Backdrop,
+  Popup,
+  Header,
+  Footer,
+  Title,
+  Description,
+  Panel,
 };

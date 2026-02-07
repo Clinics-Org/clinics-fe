@@ -5,7 +5,7 @@ import { useRender } from '@base-ui/react/use-render';
 
 import { cn } from '@/lib/utils';
 
-function Card({
+function Root({
   className,
   render,
   ...props
@@ -25,7 +25,7 @@ function Card({
   });
 }
 
-function CardFrame({
+function Frame({
   className,
   render,
   ...props
@@ -45,7 +45,7 @@ function CardFrame({
   });
 }
 
-function CardFrameHeader({
+function FrameHeader({
   className,
   render,
   ...props
@@ -62,7 +62,7 @@ function CardFrameHeader({
   });
 }
 
-function CardFrameTitle({
+function FrameTitle({
   className,
   render,
   ...props
@@ -79,7 +79,7 @@ function CardFrameTitle({
   });
 }
 
-function CardFrameDescription({
+function FrameDescription({
   className,
   render,
   ...props
@@ -96,7 +96,7 @@ function CardFrameDescription({
   });
 }
 
-function CardFrameFooter({
+function FrameFooter({
   className,
   render,
   ...props
@@ -113,7 +113,7 @@ function CardFrameFooter({
   });
 }
 
-function CardHeader({
+function Header({
   className,
   render,
   ...props
@@ -133,7 +133,7 @@ function CardHeader({
   });
 }
 
-function CardTitle({
+function Title({
   className,
   render,
   ...props
@@ -150,7 +150,7 @@ function CardTitle({
   });
 }
 
-function CardDescription({
+function Description({
   className,
   render,
   ...props
@@ -167,7 +167,7 @@ function CardDescription({
   });
 }
 
-function CardAction({
+function Action({
   className,
   render,
   ...props
@@ -187,7 +187,7 @@ function CardAction({
   });
 }
 
-function CardPanel({
+function Panel({
   className,
   render,
   ...props
@@ -207,7 +207,7 @@ function CardPanel({
   });
 }
 
-function CardFooter({
+function Footer({
   className,
   render,
   ...props
@@ -226,19 +226,17 @@ function CardFooter({
     render,
   });
 }
-
-export {
-  Card,
-  CardFrame,
-  CardFrameHeader,
-  CardFrameTitle,
-  CardFrameDescription,
-  CardFrameFooter,
-  CardAction,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardPanel,
-  CardPanel as CardContent,
-  CardTitle,
+export const Card = {
+  Root,
+  Frame,
+  FrameHeader,
+  FrameTitle,
+  FrameDescription,
+  FrameFooter,
+  Action,
+  Description,
+  Footer,
+  Header,
+  Panel,
+  Title,
 };

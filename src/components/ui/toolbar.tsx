@@ -4,7 +4,7 @@ import { Toolbar as ToolbarPrimitive } from '@base-ui/react/toolbar';
 
 import { cn } from '@/lib/utils';
 
-function Toolbar({ className, ...props }: ToolbarPrimitive.Root.Props) {
+function Root({ className, ...props }: ToolbarPrimitive.Root.Props) {
   return (
     <ToolbarPrimitive.Root
       className={cn(
@@ -27,7 +27,7 @@ function ToolbarButton({ className, ...props }: ToolbarPrimitive.Button.Props) {
   );
 }
 
-function ToolbarLink({ className, ...props }: ToolbarPrimitive.Link.Props) {
+function Link({ className, ...props }: ToolbarPrimitive.Link.Props) {
   return (
     <ToolbarPrimitive.Link
       className={cn(className)}
@@ -37,7 +37,7 @@ function ToolbarLink({ className, ...props }: ToolbarPrimitive.Link.Props) {
   );
 }
 
-function ToolbarInput({ className, ...props }: ToolbarPrimitive.Input.Props) {
+function Input({ className, ...props }: ToolbarPrimitive.Input.Props) {
   return (
     <ToolbarPrimitive.Input
       className={cn(className)}
@@ -47,7 +47,7 @@ function ToolbarInput({ className, ...props }: ToolbarPrimitive.Input.Props) {
   );
 }
 
-function ToolbarGroup({ className, ...props }: ToolbarPrimitive.Group.Props) {
+function Group({ className, ...props }: ToolbarPrimitive.Group.Props) {
   return (
     <ToolbarPrimitive.Group
       className={cn('flex items-center gap-1', className)}
@@ -57,10 +57,7 @@ function ToolbarGroup({ className, ...props }: ToolbarPrimitive.Group.Props) {
   );
 }
 
-function ToolbarSeparator({
-  className,
-  ...props
-}: ToolbarPrimitive.Separator.Props) {
+function Separator({ className, ...props }: ToolbarPrimitive.Separator.Props) {
   return (
     <ToolbarPrimitive.Separator
       className={cn(
@@ -73,11 +70,11 @@ function ToolbarSeparator({
   );
 }
 
-export {
-  Toolbar,
-  ToolbarGroup,
-  ToolbarSeparator,
-  ToolbarButton,
-  ToolbarLink,
-  ToolbarInput,
+export const Toolbar = {
+  Root,
+  Group,
+  Separator,
+  Button: ToolbarButton,
+  Link,
+  Input,
 };

@@ -23,7 +23,7 @@ const alertVariants = cva(
   },
 );
 
-function Alert({
+function Root({
   className,
   variant,
   ...props
@@ -38,7 +38,7 @@ function Alert({
   );
 }
 
-function AlertTitle({ className, ...props }: React.ComponentProps<'div'>) {
+function Title({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn('font-medium [svg~&]:col-start-2', className)}
@@ -48,10 +48,7 @@ function AlertTitle({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function AlertDescription({
-  className,
-  ...props
-}: React.ComponentProps<'div'>) {
+function Description({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
@@ -64,7 +61,7 @@ function AlertDescription({
   );
 }
 
-function AlertAction({ className, ...props }: React.ComponentProps<'div'>) {
+function Action({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
@@ -77,4 +74,9 @@ function AlertAction({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-export { Alert, AlertTitle, AlertDescription, AlertAction };
+export const Alert = {
+  Root,
+  Title,
+  Description,
+  Action,
+};

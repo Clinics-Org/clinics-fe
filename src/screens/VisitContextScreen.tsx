@@ -1,17 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui_old/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '../components/ui_old/Card';
 import { patientService } from '../services/patientService';
 import { visitService } from '../services/visitService';
 import { prescriptionService } from '../services/prescriptionService';
-import { toast } from '../utils/toast';
 import type { Patient, Visit } from '../types';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/toast';
 
 export default function VisitContextScreen() {
   const { visitId } = useParams<{ visitId: string }>();
@@ -93,23 +88,29 @@ export default function VisitContextScreen() {
         setVisit(updatedVisit);
         navigate(`/consultation/${visit.id}`);
       } else {
-        toast.error('Failed to start consultation. Please try again.');
+        toast.add({
+          type: 'error',
+          title: 'Failed to start consultation. Please try again.',
+        });
       }
     } catch (error: any) {
       console.error('Failed to start consultation:', error);
-      toast.error(
-        error?.message || 'Failed to start consultation. Please try again.',
-      );
+      toast.add({
+        type: 'error',
+        title:
+          error?.message || 'Failed to start consultation. Please try again.',
+      });
     }
   };
 
   const handleWhatsAppToggle = () => {
     setWhatsappEnabled(!whatsappEnabled);
     if (!whatsappEnabled) {
-      toast.success(
-        'WhatsApp notifications enabled',
-        'Prescription will be sent on WhatsApp when saved',
-      );
+      toast.add({
+        type: 'success',
+        title: 'WhatsApp notifications enabled',
+        description: 'Prescription will be sent on WhatsApp when saved',
+      });
     }
   };
 
@@ -137,12 +138,12 @@ export default function VisitContextScreen() {
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Patient Header */}
-        <Card className="mb-6 border-teal-200">
-          <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100">
+        <Card.Root className="mb-6 border-teal-200">
+          <Card.Header className="bg-linear-to-r from-teal-50 to-white border-b border-teal-100">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl text-teal-900">
+              <Card.Title className="text-2xl text-teal-900">
                 {patient.name}
-              </CardTitle>
+              </Card.Title>
               <div className="flex items-center gap-2">
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -161,8 +162,8 @@ export default function VisitContextScreen() {
                 </span>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="pt-6">
+          </Card.Header>
+          <Card.Panel className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <span className="text-teal-600 font-medium">Age:</span>
@@ -191,16 +192,16 @@ export default function VisitContextScreen() {
                 <span className="font-semibold text-gray-900">{visitDate}</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </Card.Panel>
+        </Card.Root>
 
         {/* Primary Actions */}
         <div className="mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <Card.Root>
+            <Card.Header>
+              <Card.Title className="text-lg">Actions</Card.Title>
+            </Card.Header>
+            <Card.Panel className="space-y-4">
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -235,17 +236,17 @@ export default function VisitContextScreen() {
                   Consult & Write Prescription
                 </Button>
               )}
-            </CardContent>
-          </Card>
+            </Card.Panel>
+          </Card.Root>
         </div>
 
         {/* Visit History */}
         <div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Visit History</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <Card.Root>
+            <Card.Header>
+              <Card.Title className="text-lg">Visit History</Card.Title>
+            </Card.Header>
+            <Card.Panel>
               {visitHistory.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {visitHistory.map((historyVisit) => (
@@ -299,8 +300,8 @@ export default function VisitContextScreen() {
               ) : (
                 <div className="text-sm text-gray-500">No previous visits</div>
               )}
-            </CardContent>
-          </Card>
+            </Card.Panel>
+          </Card.Root>
         </div>
       </div>
     </div>

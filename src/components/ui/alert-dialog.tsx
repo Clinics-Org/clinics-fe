@@ -4,19 +4,21 @@ import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog
 
 import { cn } from '@/lib/utils';
 
-const AlertDialogCreateHandle = AlertDialogPrimitive.createHandle;
+const createHandle = AlertDialogPrimitive.createHandle;
 
-const AlertDialog = AlertDialogPrimitive.Root;
+function Root(props: AlertDialogPrimitive.Root.Props) {
+  return <AlertDialogPrimitive.Root {...props} />;
+}
 
-const AlertDialogPortal = AlertDialogPrimitive.Portal;
+const Portal = AlertDialogPrimitive.Portal;
 
-function AlertDialogTrigger(props: AlertDialogPrimitive.Trigger.Props) {
+function Trigger(props: AlertDialogPrimitive.Trigger.Props) {
   return (
     <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
   );
 }
 
-function AlertDialogBackdrop({
+function Backdrop({
   className,
   ...props
 }: AlertDialogPrimitive.Backdrop.Props) {
@@ -32,7 +34,7 @@ function AlertDialogBackdrop({
   );
 }
 
-function AlertDialogViewport({
+function Viewport({
   className,
   ...props
 }: AlertDialogPrimitive.Viewport.Props) {
@@ -48,7 +50,7 @@ function AlertDialogViewport({
   );
 }
 
-function AlertDialogPopup({
+function Popup({
   className,
   bottomStickOnMobile = true,
   ...props
@@ -56,9 +58,9 @@ function AlertDialogPopup({
   bottomStickOnMobile?: boolean;
 }) {
   return (
-    <AlertDialogPortal>
-      <AlertDialogBackdrop />
-      <AlertDialogViewport
+    <Portal>
+      <Backdrop />
+      <Viewport
         className={cn(
           bottomStickOnMobile &&
             'max-sm:grid-rows-[1fr_auto] max-sm:p-0 max-sm:pt-12',
@@ -74,15 +76,12 @@ function AlertDialogPopup({
           data-slot="alert-dialog-popup"
           {...props}
         />
-      </AlertDialogViewport>
-    </AlertDialogPortal>
+      </Viewport>
+    </Portal>
   );
 }
 
-function AlertDialogHeader({
-  className,
-  ...props
-}: React.ComponentProps<'div'>) {
+function Header({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
@@ -95,7 +94,7 @@ function AlertDialogHeader({
   );
 }
 
-function AlertDialogFooter({
+function Footer({
   className,
   variant = 'default',
   ...props
@@ -116,10 +115,7 @@ function AlertDialogFooter({
   );
 }
 
-function AlertDialogTitle({
-  className,
-  ...props
-}: AlertDialogPrimitive.Title.Props) {
+function Title({ className, ...props }: AlertDialogPrimitive.Title.Props) {
   return (
     <AlertDialogPrimitive.Title
       className={cn(
@@ -132,7 +128,7 @@ function AlertDialogTitle({
   );
 }
 
-function AlertDialogDescription({
+function Description({
   className,
   ...props
 }: AlertDialogPrimitive.Description.Props) {
@@ -151,19 +147,17 @@ function AlertDialogClose(props: AlertDialogPrimitive.Close.Props) {
   );
 }
 
-export {
-  AlertDialogCreateHandle,
-  AlertDialog,
-  AlertDialogPortal,
-  AlertDialogBackdrop,
-  AlertDialogBackdrop as AlertDialogOverlay,
-  AlertDialogTrigger,
-  AlertDialogPopup,
-  AlertDialogPopup as AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogClose,
-  AlertDialogViewport,
+export const AlertDialog = {
+  createHandle,
+  Root,
+  Portal,
+  Backdrop,
+  Trigger,
+  Popup,
+  Header,
+  Footer,
+  Title,
+  Description,
+  Close: AlertDialogClose,
+  Viewport,
 };

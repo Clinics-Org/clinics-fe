@@ -4,7 +4,7 @@ import { Avatar as AvatarPrimitive } from '@base-ui/react/avatar';
 
 import { cn } from '@/lib/utils';
 
-function Avatar({ className, ...props }: AvatarPrimitive.Root.Props) {
+function Root({ className, ...props }: AvatarPrimitive.Root.Props) {
   return (
     <AvatarPrimitive.Root
       className={cn(
@@ -17,7 +17,7 @@ function Avatar({ className, ...props }: AvatarPrimitive.Root.Props) {
   );
 }
 
-function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
+function Image({ className, ...props }: AvatarPrimitive.Image.Props) {
   return (
     <AvatarPrimitive.Image
       className={cn('size-full object-cover', className)}
@@ -27,10 +27,7 @@ function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
   );
 }
 
-function AvatarFallback({
-  className,
-  ...props
-}: AvatarPrimitive.Fallback.Props) {
+function Fallback({ className, ...props }: AvatarPrimitive.Fallback.Props) {
   return (
     <AvatarPrimitive.Fallback
       className={cn(
@@ -43,4 +40,4 @@ function AvatarFallback({
   );
 }
 
-export { Avatar, AvatarImage, AvatarFallback };
+export const Avatar = { Root, Image, Fallback };

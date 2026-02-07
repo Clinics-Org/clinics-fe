@@ -6,16 +6,10 @@ import { Button } from './button';
 import { Input } from './input';
 import { ScrollArea } from './scroll-area';
 import { Separator } from './separator';
-import {
-  Sheet,
-  SheetDescription,
-  SheetHeader,
-  SheetPopup,
-  SheetTitle,
-} from './sheet';
+import { Sheet } from './sheet';
 import { Skeleton } from './skeleton';
-import { Tooltip, TooltipPopup, TooltipTrigger } from './tooltip';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Tooltip } from './tooltip';
+// import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { PanelLeftIcon } from 'lucide-react';
@@ -62,7 +56,9 @@ function SidebarProvider({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
-  const isMobile = useIsMobile();
+  // const isMobile = useIsMobile();
+  // TODO: @sandeep add useIsMobile
+  const isMobile = false;
   const [openMobile, setOpenMobile] = React.useState(false);
 
   // This is the internal state of the sidebar.
@@ -181,8 +177,8 @@ function Sidebar({
 
   if (isMobile) {
     return (
-      <Sheet onOpenChange={setOpenMobile} open={openMobile} {...props}>
-        <SheetPopup
+      <Sheet.Root onOpenChange={setOpenMobile} open={openMobile} {...props}>
+        <Sheet.Popup
           className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
           data-mobile="true"
           data-sidebar="sidebar"
@@ -194,13 +190,13 @@ function Sidebar({
             } as React.CSSProperties
           }
         >
-          <SheetHeader className="sr-only">
-            <SheetTitle>Sidebar</SheetTitle>
-            <SheetDescription>Displays the mobile sidebar.</SheetDescription>
-          </SheetHeader>
+          <Sheet.Header className="sr-only">
+            <Sheet.Title>Sidebar</Sheet.Title>
+            <Sheet.Description>Displays the mobile sidebar.</Sheet.Description>
+          </Sheet.Header>
           <div className="flex h-full w-full flex-col">{children}</div>
-        </SheetPopup>
-      </Sheet>
+        </Sheet.Popup>
+      </Sheet.Root>
     );
   }
 
@@ -370,7 +366,7 @@ function SidebarSeparator({
 
 function SidebarContent({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <ScrollArea
+    <ScrollArea.Root
       className="**:data-[slot=scroll-area-scrollbar]:hidden"
       scrollFade
     >
@@ -383,7 +379,7 @@ function SidebarContent({ className, ...props }: React.ComponentProps<'div'>) {
         data-slot="sidebar-content"
         {...props}
       />
-    </ScrollArea>
+    </ScrollArea.Root>
   );
 }
 
@@ -512,7 +508,7 @@ function SidebarMenuButton({
   ...props
 }: useRender.ComponentProps<'button'> & {
   isActive?: boolean;
-  tooltip?: string | React.ComponentProps<typeof TooltipPopup>;
+  tooltip?: string | React.ComponentProps<typeof Tooltip.Popup>;
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const { isMobile, state } = useSidebar();
 
@@ -543,17 +539,19 @@ function SidebarMenuButton({
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={buttonElement as React.ReactElement<Record<string, unknown>>}
-      />
-      <TooltipPopup
-        align="center"
-        hidden={state !== 'collapsed' || isMobile}
-        side="right"
-        {...tooltip}
-      />
-    </Tooltip>
+    <Tooltip.Provider>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          render={buttonElement as React.ReactElement<Record<string, unknown>>}
+        />
+        <Tooltip.Popup
+          align="center"
+          hidden={state !== 'collapsed' || isMobile}
+          side="right"
+          {...tooltip}
+        />
+      </Tooltip.Root>
+    </Tooltip.Provider>
   );
 }
 

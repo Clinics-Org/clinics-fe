@@ -4,11 +4,7 @@ import { Progress as ProgressPrimitive } from '@base-ui/react/progress';
 
 import { cn } from '@/lib/utils';
 
-function Progress({
-  className,
-  children,
-  ...props
-}: ProgressPrimitive.Root.Props) {
+function Root({ className, children, ...props }: ProgressPrimitive.Root.Props) {
   return (
     <ProgressPrimitive.Root
       className={cn('flex w-full flex-col gap-2', className)}
@@ -18,15 +14,15 @@ function Progress({
       {children ? (
         children
       ) : (
-        <ProgressTrack>
-          <ProgressIndicator />
-        </ProgressTrack>
+        <Track>
+          <Indicator />
+        </Track>
       )}
     </ProgressPrimitive.Root>
   );
 }
 
-function ProgressLabel({ className, ...props }: ProgressPrimitive.Label.Props) {
+function Label({ className, ...props }: ProgressPrimitive.Label.Props) {
   return (
     <ProgressPrimitive.Label
       className={cn('font-medium text-sm', className)}
@@ -36,7 +32,7 @@ function ProgressLabel({ className, ...props }: ProgressPrimitive.Label.Props) {
   );
 }
 
-function ProgressTrack({ className, ...props }: ProgressPrimitive.Track.Props) {
+function Track({ className, ...props }: ProgressPrimitive.Track.Props) {
   return (
     <ProgressPrimitive.Track
       className={cn(
@@ -49,7 +45,7 @@ function ProgressTrack({ className, ...props }: ProgressPrimitive.Track.Props) {
   );
 }
 
-function ProgressIndicator({
+function Indicator({
   className,
   ...props
 }: ProgressPrimitive.Indicator.Props) {
@@ -62,7 +58,7 @@ function ProgressIndicator({
   );
 }
 
-function ProgressValue({ className, ...props }: ProgressPrimitive.Value.Props) {
+function Value({ className, ...props }: ProgressPrimitive.Value.Props) {
   return (
     <ProgressPrimitive.Value
       className={cn('text-sm tabular-nums', className)}
@@ -72,10 +68,4 @@ function ProgressValue({ className, ...props }: ProgressPrimitive.Value.Props) {
   );
 }
 
-export {
-  Progress,
-  ProgressLabel,
-  ProgressTrack,
-  ProgressIndicator,
-  ProgressValue,
-};
+export const Progress = { Root, Label, Track, Indicator, Value };

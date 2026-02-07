@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 type TabsVariant = 'default' | 'underline';
 
-function Tabs({ className, ...props }: TabsPrimitive.Root.Props) {
+function Root({ className, ...props }: TabsPrimitive.Root.Props) {
   return (
     <TabsPrimitive.Root
       className={cn(
@@ -19,7 +19,7 @@ function Tabs({ className, ...props }: TabsPrimitive.Root.Props) {
   );
 }
 
-function TabsList({
+function List({
   variant = 'default',
   className,
   children,
@@ -54,7 +54,7 @@ function TabsList({
   );
 }
 
-function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
+function Tab({ className, ...props }: TabsPrimitive.Tab.Props) {
   return (
     <TabsPrimitive.Tab
       className={cn(
@@ -67,7 +67,7 @@ function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
   );
 }
 
-function TabsPanel({ className, ...props }: TabsPrimitive.Panel.Props) {
+function Panel({ className, ...props }: TabsPrimitive.Panel.Props) {
   return (
     <TabsPrimitive.Panel
       className={cn('flex-1 outline-none', className)}
@@ -77,11 +77,4 @@ function TabsPanel({ className, ...props }: TabsPrimitive.Panel.Props) {
   );
 }
 
-export {
-  Tabs,
-  TabsList,
-  TabsTab,
-  TabsTab as TabsTrigger,
-  TabsPanel,
-  TabsPanel as TabsContent,
-};
+export const Tabs = { Root, List, Tab, Panel };
