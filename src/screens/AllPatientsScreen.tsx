@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, Modal } from '../components/ui';
-import { Card, CardContent } from '../components/ui/Card';
 import { patientService } from '../services/patientService';
-import { toast } from '../utils/toast';
 import type { Patient } from '../types';
 import {
   validatePhoneNumber,
@@ -14,6 +11,12 @@ import {
   getErrorMessage,
   hasValidationErrors,
 } from '../utils/errorHandler';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { Dialog } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/components/ui/toast';
 
 export default function AllPatientsScreen() {
   const navigate = useNavigate();
@@ -135,7 +138,10 @@ export default function AllPatientsScreen() {
       console.log('✅ Patient created:', patient);
 
       // Show success message
-      toast.success('Patient created successfully!');
+      toast.add({
+        title: 'Patient created successfully!',
+        type: 'success',
+      });
 
       // Close modal
       setIsModalOpen(false);
@@ -152,9 +158,15 @@ export default function AllPatientsScreen() {
           ...prevErrors,
           ...validationErrors,
         }));
-        toast.error(getErrorMessage(error));
+        toast.add({
+          title: getErrorMessage(error),
+          type: 'error',
+        });
       } else {
-        toast.error(getErrorMessage(error));
+        toast.add({
+          title: getErrorMessage(error),
+          type: 'error',
+        });
       }
     }
   };
@@ -185,7 +197,7 @@ export default function AllPatientsScreen() {
             </div>
             <Button
               onClick={handleAddNewPatient}
-              className="flex-shrink-0 text-sm md:text-base px-3 md:px-4"
+              className="shrink-0 text-sm md:text-base px-3 md:px-4"
               size="sm"
             >
               + Add
@@ -207,17 +219,17 @@ export default function AllPatientsScreen() {
         {filteredPatients.length > 0 ? (
           <div className="grid gap-3">
             {filteredPatients.map((patient) => (
-              <Card
+              <Card.Root
                 key={patient.id}
                 className="border-teal-200 hover:border-teal-400 hover:shadow-lg transition-all cursor-pointer"
                 onClick={() => navigate(`/patient/${patient.id}`)}
               >
-                <CardContent className="p-3 md:p-5">
+                <Card.Panel className="p-3 md:p-5">
                   {/* Mobile View - Compact Layout */}
                   <div className="md:hidden">
                     <div className="flex items-center gap-3">
                       {/* Avatar */}
-                      <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0">
+                      <div className="w-12 h-12 bg-linear-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base shrink-0">
                         {patient.name.charAt(0).toUpperCase()}
                       </div>
 
@@ -316,13 +328,13 @@ export default function AllPatientsScreen() {
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </Card.Panel>
+              </Card.Root>
             ))}
           </div>
         ) : (
-          <Card className="border-teal-200">
-            <CardContent className="p-12 text-center">
+          <Card.Root className="border-teal-200">
+            <Card.Panel className="p-12 text-center">
               <div className="text-gray-500">
                 {searchQuery ? (
                   <>
@@ -351,119 +363,147 @@ export default function AllPatientsScreen() {
                   </>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </Card.Panel>
+          </Card.Root>
         )}
       </div>
 
-      <Modal
+      <Dialog.Root
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
-        title="Add New Patient"
-        size="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSavePatient}>Save Patient</Button>
-          </>
-        }
+        // TODO: @sandeep add size
+        // size="lg"
       >
-        <div className="space-y-5">
-          <Input
-            label="Name *"
-            value={newPatient.name}
-            onChange={(e) =>
-              setNewPatient({ ...newPatient, name: e.target.value })
-            }
-            error={errors.name}
-            placeholder="Enter patient name"
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSavePatient();
-              }
-            }}
-          />
-          <Input
-            label="Mobile *"
-            type="tel"
-            value={newPatient.mobile}
-            onChange={(e) =>
-              setNewPatient({
-                ...newPatient,
-                mobile: formatPhoneInput(e.target.value),
-              })
-            }
-            error={errors.mobile}
-            placeholder="Enter mobile number (e.g., +91 9876543210)"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSavePatient();
-              }
-            }}
-          />
-          <Input
-            label="Age"
-            type="number"
-            value={newPatient.age}
-            onChange={(e) =>
-              setNewPatient({ ...newPatient, age: e.target.value })
-            }
-            error={errors.age}
-            placeholder="Enter age (optional)"
-            min="0"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSavePatient();
-              }
-            }}
-          />
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Gender *
-            </label>
-            <div className="flex gap-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="gender"
-                  value="M"
-                  checked={newPatient.gender === 'M'}
+        <Dialog.Popup>
+          <Dialog.Header>
+            <Dialog.Title>Add New Patient</Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Panel>
+            <div className="space-y-5">
+              <div className="flex flex-col items-start gap-2">
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  value={newPatient.name}
+                  onChange={(e) =>
+                    setNewPatient({ ...newPatient, name: e.target.value })
+                  }
+                  // error={errors.name}
+                  placeholder="Enter patient name"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSavePatient();
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="flex flex-col items-start gap-2">
+                <Label htmlFor="mobile">Mobile *</Label>
+                <Input
+                  id="mobile"
+                  type="tel"
+                  value={newPatient.mobile}
                   onChange={(e) =>
                     setNewPatient({
                       ...newPatient,
-                      gender: e.target.value as 'M' | 'F',
+                      mobile: formatPhoneInput(e.target.value),
                     })
                   }
-                  className="mr-2"
+                  // error={errors.mobile}
+                  placeholder="Enter mobile number (e.g., +91 9876543210)"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSavePatient();
+                    }
+                  }}
                 />
-                Male
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="gender"
-                  value="F"
-                  checked={newPatient.gender === 'F'}
+              </div>
+
+              <div className="flex flex-col items-start gap-2">
+                <Label htmlFor="age">Age</Label>
+                <Input
+                  id="age"
+                  type="number"
+                  value={newPatient.age}
                   onChange={(e) =>
-                    setNewPatient({
-                      ...newPatient,
-                      gender: e.target.value as 'M' | 'F',
-                    })
+                    setNewPatient({ ...newPatient, age: e.target.value })
                   }
-                  className="mr-2"
+                  // error={errors.age}
+                  placeholder="Enter age (optional)"
+                  min="0"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSavePatient();
+                    }
+                  }}
                 />
-                Female
-              </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Gender *
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="M"
+                      checked={newPatient.gender === 'M'}
+                      onChange={(e) =>
+                        setNewPatient({
+                          ...newPatient,
+                          gender: e.target.value as 'M' | 'F',
+                        })
+                      }
+                      className="mr-2"
+                    />
+                    Male
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="F"
+                      checked={newPatient.gender === 'F'}
+                      onChange={(e) =>
+                        setNewPatient({
+                          ...newPatient,
+                          gender: e.target.value as 'M' | 'F',
+                        })
+                      }
+                      className="mr-2"
+                    />
+                    Female
+                  </label>
+                </div>
+                {errors.gender && (
+                  <p className="mt-1 text-sm text-red-600">{errors.gender}</p>
+                )}
+              </div>
             </div>
-            {errors.gender && (
-              <p className="mt-1 text-sm text-red-600">{errors.gender}</p>
-            )}
-          </div>
-        </div>
-      </Modal>
+          </Dialog.Panel>
+
+          <Dialog.Footer>
+            <>
+              <Dialog.Close
+                render={
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsModalOpen(false)}
+                  />
+                }
+              >
+                Cancel
+              </Dialog.Close>
+
+              <Button onClick={handleSavePatient}>Save Patient</Button>
+            </>
+          </Dialog.Footer>
+        </Dialog.Popup>
+      </Dialog.Root>
     </div>
   );
 }

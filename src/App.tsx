@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from './utils/toast';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginScreen from './screens/LoginScreen';
@@ -14,6 +13,7 @@ import PrintPreviewScreen from './screens/PrintPreviewScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import AppointmentsScreen from './screens/AppointmentsScreen';
 import { authService } from './services/authService';
+import { ToastProvider } from './components/ui/toast';
 
 function App() {
   return (
@@ -68,7 +68,7 @@ function App() {
                   <Route path="/settings" element={<SettingsScreen />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-                <Toaster />
+                <ToastProvider />
               </AppLayout>
             </ProtectedRoute>
           }

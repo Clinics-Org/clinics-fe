@@ -1,16 +1,6 @@
 import { useState, useEffect } from 'react';
-import {
-  Input,
-  Button,
-  Modal,
-  DatePicker,
-  Select,
-  SelectItem,
-} from '../components/ui';
-import { Card, CardContent } from '../components/ui/Card';
 import { appointmentService } from '../services/appointmentService';
 import { patientService } from '../services/patientService';
-import { toast } from '../utils/toast';
 import type { Appointment, ClinicDoctor, Patient } from '../types';
 import { clinicService } from '../services/clinicService';
 import {
@@ -22,6 +12,14 @@ import {
   getErrorMessage,
   hasValidationErrors,
 } from '../utils/errorHandler';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Card } from '@/components/ui/card';
+import { Dialog } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/components/ui/toast';
+import { Select } from '@/components/ui/select';
 
 export default function AppointmentsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,7 +121,10 @@ export default function AppointmentsScreen() {
       setFilteredAppointments(result.appointments);
     } catch (error) {
       console.error('❌ Failed to load appointments:', error);
-      toast.error('Failed to load appointments');
+      toast.add({
+        title: 'Failed to load appointments',
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -187,7 +188,10 @@ export default function AppointmentsScreen() {
       }
     } catch (error) {
       console.error('❌ Error searching patient:', error);
-      toast.error('Failed to search patient');
+      toast.add({
+        title: 'Failed to search patient',
+        type: 'error',
+      });
     } finally {
       setSearching(false);
     }
@@ -240,7 +244,10 @@ export default function AppointmentsScreen() {
         selectedDoctorId || (doctors.length === 1 ? doctors[0].id : '');
 
       if (!doctorId) {
-        toast.error('Please select a doctor');
+        toast.add({
+          title: 'Please select a doctor',
+          type: 'error',
+        });
         return;
       }
 
@@ -250,7 +257,10 @@ export default function AppointmentsScreen() {
         : '';
 
       if (!isoDateTime) {
-        toast.error('Invalid appointment date/time');
+        toast.add({
+          title: 'Invalid appointment date/time',
+          type: 'error',
+        });
         return;
       }
 
@@ -268,7 +278,10 @@ export default function AppointmentsScreen() {
       });
 
       console.log('✅ Appointment created:', appointment.id);
-      toast.success('Appointment created successfully!');
+      toast.add({
+        title: 'Appointment created successfully!',
+        type: 'success',
+      });
       setIsModalOpen(false);
 
       // Reload appointments
@@ -292,10 +305,16 @@ export default function AppointmentsScreen() {
         }
 
         // Show general error message
-        toast.error(getErrorMessage(error));
+        toast.add({
+          title: getErrorMessage(error),
+          type: 'error',
+        });
       } else {
         // Show general error message
-        toast.error(getErrorMessage(error));
+        toast.add({
+          title: getErrorMessage(error),
+          type: 'error',
+        });
       }
     }
   };
@@ -311,14 +330,23 @@ export default function AppointmentsScreen() {
         'CHECKED_IN',
       );
       if (updated) {
-        toast.success('Appointment marked as checked in');
+        toast.add({
+          title: 'ppointment marked as checked in',
+          type: 'success',
+        });
         await loadAppointments(); // Reload to refresh the list
       } else {
-        toast.error('Failed to mark check in');
+        toast.add({
+          title: 'Failed to mark check in',
+          type: 'error',
+        });
       }
     } catch (error: any) {
       console.error('❌ Failed to mark check in:', error);
-      toast.error(error?.message || 'Failed to mark check in');
+      toast.add({
+        title: error?.message || 'Failed to mark check in',
+        type: 'error',
+      });
     }
   };
 
@@ -379,11 +407,7 @@ export default function AppointmentsScreen() {
                 {searchQuery && ` found`}
               </p>
             </div>
-            <Button
-              onClick={handleCreateAppointment}
-              className="flex-shrink-0 text-sm md:text-base px-3 md:px-4"
-              size="sm"
-            >
+            <Button onClick={handleCreateAppointment} size="sm">
               + Create
             </Button>
           </div>
@@ -408,23 +432,30 @@ export default function AppointmentsScreen() {
               className="w-full text-sm"
             />
           </div>
-
-          {/* Doctor Filter */}
           {doctors.length > 0 && (
-            <div className="sm:w-48 md:w-56">
-              <Select
+            <div className="flex flex-col items-start gap-2 sm:w-48 md:w-56">
+              <Label>All Doctors</Label>
+
+              <Select.Root
                 value={selectedDoctorFilter || undefined}
-                onValueChange={(value) => setSelectedDoctorFilter(value || '')}
-                placeholder="All Doctors"
-                className="w-full text-sm"
+                onValueChange={(value) => {
+                  setSelectedDoctorFilter(value || '');
+                }}
               >
-                <SelectItem value="all">All Doctors</SelectItem>
-                {doctors.map((doc) => (
-                  <SelectItem key={doc.id} value={doc.id}>
-                    {doc.name}
-                  </SelectItem>
-                ))}
-              </Select>
+                <Select.Trigger className="w-full text-sm">
+                  <Select.Value placeholder="All Doctors" />
+                </Select.Trigger>
+
+                <Select.Popup>
+                  <Select.Item value="all">All Doctors</Select.Item>
+
+                  {doctors.map((doc) => (
+                    <Select.Item key={doc.id} value={doc.id}>
+                      {doc.name}
+                    </Select.Item>
+                  ))}
+                </Select.Popup>
+              </Select.Root>
             </div>
           )}
         </div>
@@ -432,11 +463,11 @@ export default function AppointmentsScreen() {
         {filteredAppointments.length > 0 ? (
           <div className="grid gap-3">
             {filteredAppointments.map((appointment) => (
-              <Card
+              <Card.Root
                 key={appointment.id}
                 className="border-teal-200 hover:border-teal-400 hover:shadow-lg transition-all"
               >
-                <CardContent className="p-3 md:p-5">
+                <Card.Panel className="p-3 md:p-5">
                   <div className="flex items-center md:items-start gap-3 md:gap-4">
                     {/* Avatar */}
                     <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base md:text-lg flex-shrink-0">
@@ -453,7 +484,7 @@ export default function AppointmentsScreen() {
                             {appointment.name || 'Unknown'}
                           </h3>
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${getStatusColor(appointment.appointment_status)}`}
+                            className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ${getStatusColor(appointment.appointment_status)}`}
                           >
                             {getStatusLabel(appointment.appointment_status)}
                           </span>
@@ -566,13 +597,13 @@ export default function AppointmentsScreen() {
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </Card.Panel>
+              </Card.Root>
             ))}
           </div>
         ) : (
-          <Card className="border-teal-200">
-            <CardContent className="p-12 text-center">
+          <Card.Root className="border-teal-200">
+            <Card.Panel className="p-12 text-center">
               <div className="text-gray-500">
                 {searchQuery ? (
                   <>
@@ -590,216 +621,243 @@ export default function AppointmentsScreen() {
                   </>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </Card.Panel>
+          </Card.Root>
         )}
       </div>
 
       {/* Create Appointment Modal */}
-      <Modal
+      <Dialog.Root
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
-        title={
-          step === 'mobile'
-            ? 'Create Appointment'
-            : foundPatient
-              ? 'Create Appointment - Patient Found'
-              : 'Create Appointment - New Patient'
-        }
-        size="lg"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (step === 'patient-form') {
-                  setStep('mobile');
-                  setErrors({});
-                } else {
-                  setIsModalOpen(false);
-                }
-              }}
-            >
-              {step === 'mobile' ? 'Cancel' : 'Back'}
-            </Button>
-            <Button
-              onClick={handleCreateAppointmentSubmit}
-              disabled={searching}
-            >
-              {searching
-                ? 'Searching...'
-                : step === 'mobile'
-                  ? 'Search'
-                  : 'Create Appointment'}
-            </Button>
-          </>
-        }
+        // TODO: @sandeep add size
+        // size="lg"
       >
-        <div className="space-y-5">
-          {step === 'mobile' ? (
+        <Dialog.Popup>
+          <Dialog.Header>
+            <Dialog.Title>
+              {step === 'mobile'
+                ? 'Create Appointment'
+                : foundPatient
+                  ? 'Create Appointment - Patient Found'
+                  : 'Create Appointment - New Patient'}
+            </Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Panel>
+            <div className="space-y-5">
+              {step === 'mobile' ? (
+                <>
+                  <div className="flex flex-col items-start gap-2">
+                    <Label htmlFor="mobile">Mobile Number *</Label>
+                    <Input
+                      id="mobile"
+                      type="tel"
+                      value={mobileNumber}
+                      onChange={(e) => {
+                        setMobileNumber(formatPhoneInput(e.target.value));
+                        setErrors({});
+                      }}
+                      // TODO: @sandeep add error
+                      // error={errors.mobile}
+                      placeholder="Enter mobile number (e.g., +91 9876543210)"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && mobileNumber.trim()) {
+                          handleSearchPatient();
+                        }
+                      }}
+                    />
+                    <p className="text-sm text-gray-600">
+                      Enter the patient's mobile number to search. If the
+                      patient exists, we'll use their information. Otherwise,
+                      you'll be asked to enter their details.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {foundPatient && (
+                    <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg mb-4">
+                      <p className="text-sm text-teal-800 font-medium">
+                        ✓ Patient found in database
+                      </p>
+                      <p className="text-xs text-teal-600 mt-1">
+                        {foundPatient.name} • {foundPatient.mobile}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col items-start gap-2">
+                    <Label htmlFor="name">Name *</Label>
+                    <Input
+                      id="name"
+                      value={newPatient.name}
+                      onChange={(e) =>
+                        setNewPatient({ ...newPatient, name: e.target.value })
+                      }
+                      // error={errors.name}
+                      placeholder="Enter patient name"
+                      disabled={!!foundPatient}
+                      autoFocus={!foundPatient}
+                    />
+                  </div>
+
+                  <div className="flex flex-col items-start gap-2">
+                    <Label htmlFor="mobile">Mobile *</Label>
+                    <Input
+                      id="mobile"
+                      type="tel"
+                      value={newPatient.mobile}
+                      onChange={(e) =>
+                        setNewPatient({
+                          ...newPatient,
+                          mobile: formatPhoneInput(e.target.value),
+                        })
+                      }
+                      // error={errors.mobile}
+                      placeholder="Enter mobile number (e.g., +91 9876543210)"
+                      disabled={!!foundPatient}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Gender *
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value="M"
+                          checked={newPatient.gender === 'M'}
+                          onChange={(e) =>
+                            setNewPatient({
+                              ...newPatient,
+                              gender: e.target.value as 'M' | 'F',
+                            })
+                          }
+                          className="mr-2"
+                          disabled={!!foundPatient}
+                        />
+                        Male
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="gender"
+                          value="F"
+                          checked={newPatient.gender === 'F'}
+                          onChange={(e) =>
+                            setNewPatient({
+                              ...newPatient,
+                              gender: e.target.value as 'M' | 'F',
+                            })
+                          }
+                          className="mr-2"
+                          disabled={!!foundPatient}
+                        />
+                        Female
+                      </label>
+                    </div>
+                    {errors.gender && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.gender}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Doctor Selection - Only show if more than one doctor */}
+                  {doctors.length > 1 && (
+                    <div className="flex flex-col items-start gap-2">
+                      <Label>Select Doctor *</Label>
+
+                      <Select.Root
+                        value={selectedDoctorId || undefined}
+                        onValueChange={(value) => {
+                          if (value) {
+                            setSelectedDoctorId(value);
+                            setDoctorError('');
+                          }
+                        }}
+                      >
+                        <Select.Trigger className="w-full">
+                          <Select.Value placeholder="Select doctor" />
+                        </Select.Trigger>
+
+                        <Select.Popup>
+                          {doctors.map((doc) => (
+                            <Select.Item key={doc.id} value={doc.id}>
+                              {doc.name}
+                            </Select.Item>
+                          ))}
+                        </Select.Popup>
+                      </Select.Root>
+
+                      {doctorError && (
+                        <p className="text-sm text-red-500">{doctorError}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Appointment Date/Time */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Appointment Date & Time *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={appointmentDateTime}
+                      onChange={(e) => {
+                        setAppointmentDateTime(e.target.value);
+                        setErrors({ ...errors, appointmentDateTime: '' });
+                      }}
+                      className={`flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                        errors.appointmentDateTime
+                          ? 'border-red-500 focus-visible:ring-red-500'
+                          : 'border-teal-300 focus-visible:ring-teal-500'
+                      }`}
+                      min={new Date().toISOString().slice(0, 16)}
+                    />
+                    {errors.appointmentDateTime && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.appointmentDateTime}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </Dialog.Panel>
+          <Dialog.Footer>
             <>
-              <Input
-                label="Mobile Number *"
-                type="tel"
-                value={mobileNumber}
-                onChange={(e) => {
-                  setMobileNumber(formatPhoneInput(e.target.value));
-                  setErrors({});
-                }}
-                error={errors.mobile}
-                placeholder="Enter mobile number (e.g., +91 9876543210)"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && mobileNumber.trim()) {
-                    handleSearchPatient();
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (step === 'patient-form') {
+                    setStep('mobile');
+                    setErrors({});
+                  } else {
+                    setIsModalOpen(false);
                   }
                 }}
-              />
-              <p className="text-sm text-gray-600">
-                Enter the patient's mobile number to search. If the patient
-                exists, we'll use their information. Otherwise, you'll be asked
-                to enter their details.
-              </p>
+              >
+                {step === 'mobile' ? 'Cancel' : 'Back'}
+              </Button>
+              <Button
+                onClick={handleCreateAppointmentSubmit}
+                disabled={searching}
+              >
+                {searching
+                  ? 'Searching...'
+                  : step === 'mobile'
+                    ? 'Search'
+                    : 'Create Appointment'}
+              </Button>
             </>
-          ) : (
-            <>
-              {foundPatient && (
-                <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg mb-4">
-                  <p className="text-sm text-teal-800 font-medium">
-                    ✓ Patient found in database
-                  </p>
-                  <p className="text-xs text-teal-600 mt-1">
-                    {foundPatient.name} • {foundPatient.mobile}
-                  </p>
-                </div>
-              )}
-
-              <Input
-                label="Name *"
-                value={newPatient.name}
-                onChange={(e) =>
-                  setNewPatient({ ...newPatient, name: e.target.value })
-                }
-                error={errors.name}
-                placeholder="Enter patient name"
-                disabled={!!foundPatient}
-                autoFocus={!foundPatient}
-              />
-
-              <Input
-                label="Mobile *"
-                type="tel"
-                value={newPatient.mobile}
-                onChange={(e) =>
-                  setNewPatient({
-                    ...newPatient,
-                    mobile: formatPhoneInput(e.target.value),
-                  })
-                }
-                error={errors.mobile}
-                placeholder="Enter mobile number (e.g., +91 9876543210)"
-                disabled={!!foundPatient}
-              />
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Gender *
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="M"
-                      checked={newPatient.gender === 'M'}
-                      onChange={(e) =>
-                        setNewPatient({
-                          ...newPatient,
-                          gender: e.target.value as 'M' | 'F',
-                        })
-                      }
-                      className="mr-2"
-                      disabled={!!foundPatient}
-                    />
-                    Male
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="F"
-                      checked={newPatient.gender === 'F'}
-                      onChange={(e) =>
-                        setNewPatient({
-                          ...newPatient,
-                          gender: e.target.value as 'M' | 'F',
-                        })
-                      }
-                      className="mr-2"
-                      disabled={!!foundPatient}
-                    />
-                    Female
-                  </label>
-                </div>
-                {errors.gender && (
-                  <p className="mt-1 text-sm text-red-600">{errors.gender}</p>
-                )}
-              </div>
-
-              {/* Doctor Selection - Only show if more than one doctor */}
-              {doctors.length > 1 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Doctor *
-                  </label>
-                  <Select
-                    value={selectedDoctorId || undefined}
-                    onValueChange={(value) => {
-                      setSelectedDoctorId(value || '');
-                      setDoctorError('');
-                    }}
-                    placeholder="Select doctor"
-                    className="w-full"
-                    error={doctorError}
-                  >
-                    {doctors.map((doc) => (
-                      <SelectItem key={doc.id} value={doc.id}>
-                        {doc.name}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                </div>
-              )}
-
-              {/* Appointment Date/Time */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Appointment Date & Time *
-                </label>
-                <input
-                  type="datetime-local"
-                  value={appointmentDateTime}
-                  onChange={(e) => {
-                    setAppointmentDateTime(e.target.value);
-                    setErrors({ ...errors, appointmentDateTime: '' });
-                  }}
-                  className={`flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                    errors.appointmentDateTime
-                      ? 'border-red-500 focus-visible:ring-red-500'
-                      : 'border-teal-300 focus-visible:ring-teal-500'
-                  }`}
-                  min={new Date().toISOString().slice(0, 16)}
-                />
-                {errors.appointmentDateTime && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.appointmentDateTime}
-                  </p>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </Modal>
+          </Dialog.Footer>
+        </Dialog.Popup>
+      </Dialog.Root>
     </div>
   );
 }

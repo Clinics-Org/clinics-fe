@@ -1,27 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import {
-  Button,
-  Input,
-  Modal,
-  NotesInput,
-  MedicationInput,
-} from '../components/ui';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../components/ui/Table';
-import { Stepper } from '../components/ui/Stepper';
-import { Card, CardContent } from '../components/ui/Card';
+import { Stepper } from '../components/ui/stepper';
 import { visitService } from '../services/visitService';
 import { prescriptionService } from '../services/prescriptionService';
 import { whatsappService } from '../services/whatsappService';
 import { patientService } from '../services/patientService';
-import { toast } from '../utils/toast';
 import { getVisitStep, visitSteps } from '../utils/visitStepper';
 import type { Medicine, Prescription, FollowUp, Visit } from '../types';
 import {
@@ -29,6 +12,16 @@ import {
   getErrorMessage,
   hasValidationErrors,
 } from '../utils/errorHandler';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { MedicationInput } from '@/components/ui/medication-input';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { NotesInput } from '@/components/ui/notes-input';
+import { Table } from '@/components/ui/table';
+import { Dialog } from '@/components/ui/dialog';
+import { toast } from '@/components/ui/toast';
+import { Select } from '@/components/ui/select';
 
 export default function PrescriptionScreen() {
   const { visitId } = useParams<{ visitId: string }>();
@@ -74,7 +67,10 @@ export default function PrescriptionScreen() {
           console.error('❌ Visit not found:', visitId);
           setError('Visit not found');
           setLoading(false);
-          toast.error('Visit not found');
+          toast.add({
+            title: 'Visit not found',
+            type: 'error',
+          });
           // Don't navigate immediately, let user see the error
           return;
         }
@@ -152,7 +148,10 @@ export default function PrescriptionScreen() {
       } catch (err: any) {
         console.error('❌ Error loading visit:', err);
         setError(err?.message || 'Failed to load visit');
-        toast.error('Failed to load visit data');
+        toast.add({
+          title: 'Failed to load visit data',
+          type: 'error',
+        });
       } finally {
         console.log('🏁 Setting loading to false');
         setLoading(false);
@@ -237,7 +236,10 @@ export default function PrescriptionScreen() {
     };
 
     if (prescription.medicines.length === 0) {
-      toast.error('Please add at least one medicine');
+      toast.add({
+        type: 'error',
+        title: 'Please add at least one medicine',
+      });
       return false;
     }
 
@@ -252,10 +254,16 @@ export default function PrescriptionScreen() {
         if (updatedVisit) {
           setVisit(updatedVisit);
         }
-        toast.success('Prescription saved');
+        toast.add({
+          type: 'success',
+          title: 'Prescription saved',
+        });
         return true;
       } else {
-        toast.error('Failed to save prescription');
+        toast.add({
+          type: 'error',
+          title: 'Failed to save prescription',
+        });
         return false;
       }
     } catch (error: any) {
@@ -286,11 +294,17 @@ export default function PrescriptionScreen() {
         });
 
         setMedicineErrors(newMedicineErrors);
-        toast.error(getErrorMessage(error));
+        toast.add({
+          type: 'error',
+          title: getErrorMessage(error),
+        });
         console.error('Validation errors:', validationErrors);
       } else {
         setMedicineErrors({});
-        toast.error(getErrorMessage(error));
+        toast.add({
+          type: 'error',
+          title: getErrorMessage(error),
+        });
       }
       return false;
     }
@@ -307,12 +321,18 @@ export default function PrescriptionScreen() {
 
     // Redirect to print preview for this visit
     navigate(`/print-preview/${visitId}`);
-    toast.success('Visit completed. Ready to print.');
+    toast.add({
+      type: 'success',
+      title: 'Visit completed. Ready to print.',
+    });
   };
 
   const handleWhatsApp = async () => {
     if (medicines.filter((med) => med.name.trim() !== '').length === 0) {
-      toast.error('Please add at least one medicine before sending');
+      toast.add({
+        type: 'error',
+        title: 'Please add at least one medicine before sending',
+      });
       return;
     }
     await handleSavePrescription();
@@ -346,21 +366,28 @@ export default function PrescriptionScreen() {
     }
 
     if (result.success) {
-      toast.success(
-        'Prescription sent on WhatsApp',
-        result.message || 'The prescription has been shared with the patient',
-      );
+      toast.add({
+        type: 'success',
+        title: 'Prescription sent on WhatsApp',
+        description:
+          result.message || 'The prescription has been shared with the patient',
+      });
     } else {
-      toast.error(
-        'Failed to send',
-        result.message || 'Could not send prescription on WhatsApp',
-      );
+      toast.add({
+        type: 'error',
+        title: 'Failed to send',
+        description:
+          result.message || 'Could not send prescription on WhatsApp',
+      });
     }
   };
 
   const handlePrint = async () => {
     if (medicines.filter((med) => med.name.trim() !== '').length === 0) {
-      toast.error('Please add at least one medicine before printing');
+      toast.add({
+        type: 'error',
+        title: 'Please add at least one medicine before printing',
+      });
       return;
     }
     const saved = await handleSavePrescription();
@@ -442,14 +469,14 @@ export default function PrescriptionScreen() {
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden pb-32 md:pb-24">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
         {/* Visit Progress Stepper */}
-        <Card className="mb-4 border-teal-200">
-          <CardContent className="pt-4 pb-4">
+        <Card.Root className="mb-4 border-teal-200">
+          <Card.Panel className="pt-4 pb-4">
             <Stepper
               steps={visitSteps}
               currentStep={getVisitStep(visit, 'prescription')}
             />
-          </CardContent>
-        </Card>
+          </Card.Panel>
+        </Card.Root>
 
         <div className="bg-white rounded-lg border border-teal-200 shadow-sm p-4 md:p-6">
           <div className="mb-6">
@@ -518,37 +545,44 @@ export default function PrescriptionScreen() {
                     }
                   />
                   <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      label="Dosage"
-                      type="text"
-                      inputMode="numeric"
-                      value={medicine.dosage}
-                      onChange={(e) =>
-                        handleUpdateMedicine(
-                          medicine.id,
-                          'dosage',
-                          e.target.value,
-                        )
-                      }
-                      placeholder="e.g., 1-0-1"
-                      className="w-full"
-                      error={medicineErrors[medicine.id]?.dosage}
-                      maxLength={5}
-                    />
-                    <Input
-                      label="Duration"
-                      value={medicine.duration}
-                      onChange={(e) =>
-                        handleUpdateMedicine(
-                          medicine.id,
-                          'duration',
-                          e.target.value,
-                        )
-                      }
-                      placeholder="e.g., 5 days"
-                      className="w-full"
-                      error={medicineErrors[medicine.id]?.duration}
-                    />
+                    <div className="flex flex-col items-start gap-2">
+                      <Label htmlFor="name">Dosage</Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        inputMode="numeric"
+                        value={medicine.dosage}
+                        onChange={(e) =>
+                          handleUpdateMedicine(
+                            medicine.id,
+                            'dosage',
+                            e.target.value,
+                          )
+                        }
+                        placeholder="e.g., 1-0-1"
+                        className="w-full"
+                        // TODO
+                        // error={medicineErrors[medicine.id]?.dosage}
+                        maxLength={5}
+                      />
+                    </div>
+                    <div className="flex flex-col items-start gap-2">
+                      <Label htmlFor="duration">Duration</Label>
+                      <Input
+                        id="duration"
+                        value={medicine.duration}
+                        onChange={(e) =>
+                          handleUpdateMedicine(
+                            medicine.id,
+                            'duration',
+                            e.target.value,
+                          )
+                        }
+                        placeholder="e.g., 5 days"
+                        className="w-full"
+                        // error={medicineErrors[medicine.id]?.duration}
+                      />
+                    </div>
                   </div>
                   <NotesInput
                     label="Notes (Optional)"
@@ -566,30 +600,33 @@ export default function PrescriptionScreen() {
 
             {/* Desktop Table Layout */}
             <div className="hidden md:block overflow-x-auto border border-teal-100 rounded-lg relative">
-              <Table>
-                <TableHeader className="bg-teal-50">
-                  <TableRow>
-                    <TableHead className="text-teal-900 font-semibold">
+              <Table.Root>
+                <Table.Header className="bg-teal-50">
+                  <Table.Row>
+                    <Table.Head className="text-teal-900 font-semibold">
                       Medicine
-                    </TableHead>
-                    <TableHead className="text-teal-900 font-semibold">
+                    </Table.Head>
+                    <Table.Head className="text-teal-900 font-semibold">
                       Dosage
-                    </TableHead>
-                    <TableHead className="text-teal-900 font-semibold">
+                    </Table.Head>
+                    <Table.Head className="text-teal-900 font-semibold">
                       Duration
-                    </TableHead>
-                    <TableHead className="text-teal-900 font-semibold">
+                    </Table.Head>
+                    <Table.Head className="text-teal-900 font-semibold">
                       Notes
-                    </TableHead>
-                    <TableHead className="text-teal-900 font-semibold w-24">
+                    </Table.Head>
+                    <Table.Head className="text-teal-900 font-semibold w-24">
                       Action
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+                    </Table.Head>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
                   {medicines.map((medicine, index) => (
-                    <TableRow key={medicine.id} className="hover:bg-teal-50/50">
-                      <TableCell className="min-w-[250px]">
+                    <Table.Row
+                      key={medicine.id}
+                      className="hover:bg-teal-50/50"
+                    >
+                      <Table.Cell className="min-w-62.5">
                         <MedicationInput
                           value={medicine.name}
                           onChange={(value) =>
@@ -602,8 +639,8 @@ export default function PrescriptionScreen() {
                             medicineErrors[medicine.id]?.name
                           }
                         />
-                      </TableCell>
-                      <TableCell className="min-w-[180px]">
+                      </Table.Cell>
+                      <Table.Cell className="min-w-45">
                         <Input
                           type="text"
                           inputMode="numeric"
@@ -617,11 +654,12 @@ export default function PrescriptionScreen() {
                           }
                           placeholder="e.g., 1-0-1"
                           className="w-full"
-                          error={medicineErrors[medicine.id]?.dosage}
+                          // TODO
+                          // error={medicineErrors[medicine.id]?.dosage}
                           maxLength={5}
                         />
-                      </TableCell>
-                      <TableCell className="min-w-[180px]">
+                      </Table.Cell>
+                      <Table.Cell className="min-w-45">
                         <Input
                           value={medicine.duration}
                           onChange={(e) =>
@@ -633,10 +671,11 @@ export default function PrescriptionScreen() {
                           }
                           placeholder="e.g., 5 days"
                           className="w-full"
-                          error={medicineErrors[medicine.id]?.duration}
+                          // TODO
+                          // error={medicineErrors[medicine.id]?.duration}
                         />
-                      </TableCell>
-                      <TableCell className="min-w-[200px]">
+                      </Table.Cell>
+                      <Table.Cell className="min-w-50">
                         <NotesInput
                           value={medicine.notes || ''}
                           onChange={(value: string) =>
@@ -646,8 +685,8 @@ export default function PrescriptionScreen() {
                           className="w-full"
                           error={medicineErrors[medicine.id]?.notes}
                         />
-                      </TableCell>
-                      <TableCell>
+                      </Table.Cell>
+                      <Table.Cell>
                         <div className="flex items-center justify-end gap-2">
                           {medicines.length > 1 && (
                             <Button
@@ -683,11 +722,11 @@ export default function PrescriptionScreen() {
                             </Button>
                           )}
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </Table.Cell>
+                    </Table.Row>
                   ))}
-                </TableBody>
-              </Table>
+                </Table.Body>
+              </Table.Root>
             </div>
           </div>
 
@@ -751,19 +790,25 @@ export default function PrescriptionScreen() {
                     className="w-24 sm:w-32"
                     min="1"
                   />
-                  <select
+
+                  <Select.Root
                     value={followUpUnit}
-                    onChange={(e) =>
+                    onValueChange={(value) =>
                       handleFollowUpUnitChange(
-                        e.target.value as 'days' | 'weeks' | 'months',
+                        value as 'days' | 'weeks' | 'months',
                       )
                     }
-                    className="h-10 px-3 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white text-gray-900 flex-1 sm:flex-initial sm:w-auto"
                   >
-                    <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
-                  </select>
+                    <Select.Trigger className="flex-1 sm:flex-initial sm:w-auto">
+                      <Select.Value placeholder="Unit" />
+                    </Select.Trigger>
+
+                    <Select.Popup>
+                      <Select.Item value="days">Days</Select.Item>
+                      <Select.Item value="weeks">Weeks</Select.Item>
+                      <Select.Item value="months">Months</Select.Item>
+                    </Select.Popup>
+                  </Select.Root>
                 </div>
               )}
             </div>
@@ -822,52 +867,59 @@ export default function PrescriptionScreen() {
       </div>
 
       {/* WhatsApp Modal */}
-      <Modal
+      <Dialog.Root
         open={isWhatsAppModalOpen}
         onOpenChange={setIsWhatsAppModalOpen}
-        title="Send Prescription on WhatsApp"
-        size="lg"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setIsWhatsAppModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSendWhatsApp}>Send</Button>
-          </>
-        }
+        // TODO
+        // size="lg"
       >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Preview of prescription to be sent:
-          </p>
-          <div className="bg-gray-50 p-4 rounded-lg max-h-96 overflow-y-auto">
-            {prescriptionPreview.length > 0 ? (
-              <div className="space-y-3">
-                {prescriptionPreview.map((med, idx) => (
-                  <div key={idx} className="border-b border-gray-200 pb-2">
-                    <div className="font-medium">{med.name}</div>
-                    <div className="text-sm text-gray-600">
-                      {med.dosage} - {med.duration}
-                      {med.notes && ` (${med.notes})`}
-                    </div>
+        <Dialog.Popup>
+          <Dialog.Header>
+            <Dialog.Title>Send Prescription on WhatsApp</Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Panel>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Preview of prescription to be sent:
+              </p>
+              <div className="bg-gray-50 p-4 rounded-lg max-h-96 overflow-y-auto">
+                {prescriptionPreview.length > 0 ? (
+                  <div className="space-y-3">
+                    {prescriptionPreview.map((med, idx) => (
+                      <div key={idx} className="border-b border-gray-200 pb-2">
+                        <div className="font-medium">{med.name}</div>
+                        <div className="text-sm text-gray-600">
+                          {med.dosage} - {med.duration}
+                          {med.notes && ` (${med.notes})`}
+                        </div>
+                      </div>
+                    ))}
+                    {followUp && (
+                      <div className="mt-3 pt-2 border-t border-gray-300">
+                        <strong>Follow-up:</strong> After {followUp.value}{' '}
+                        {followUp.unit}
+                      </div>
+                    )}
                   </div>
-                ))}
-                {followUp && (
-                  <div className="mt-3 pt-2 border-t border-gray-300">
-                    <strong>Follow-up:</strong> After {followUp.value}{' '}
-                    {followUp.unit}
-                  </div>
+                ) : (
+                  <p className="text-gray-500">No medicines added</p>
                 )}
               </div>
-            ) : (
-              <p className="text-gray-500">No medicines added</p>
-            )}
-          </div>
-        </div>
-      </Modal>
+            </div>
+          </Dialog.Panel>
+          <Dialog.Footer>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setIsWhatsAppModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSendWhatsApp}>Send</Button>
+            </>
+          </Dialog.Footer>
+        </Dialog.Popup>
+      </Dialog.Root>
     </div>
   );
 }

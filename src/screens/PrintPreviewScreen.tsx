@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import * as Tabs from '@radix-ui/react-tabs';
-import { Button } from '../components/ui/Button';
-import { Card, CardContent } from '../components/ui/Card';
-import { Stepper } from '../components/ui/Stepper';
+import { Stepper } from '../components/ui/stepper';
 import { visitService } from '../services/visitService';
 import { patientService } from '../services/patientService';
 import { prescriptionService } from '../services/prescriptionService';
@@ -11,6 +8,9 @@ import { printUtils } from '../utils/print';
 import { visitSteps } from '../utils/visitStepper';
 import { useClinic } from '../hooks/useClinic';
 import type { Patient, Visit } from '../types';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs } from '@/components/ui/tabs';
 
 export default function PrintPreviewScreen() {
   const { visitId } = useParams<{ visitId: string }>();
@@ -92,11 +92,11 @@ export default function PrintPreviewScreen() {
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden">
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-6">
         {/* Visit Progress Stepper */}
-        <Card className="mb-4 border-teal-200">
-          <CardContent className="pt-4 pb-4">
+        <Card.Root className="mb-4 border-teal-200">
+          <Card.Panel className="pt-4 pb-4">
             <Stepper steps={visitSteps} currentStep={visitSteps.length} />
-          </CardContent>
-        </Card>
+          </Card.Panel>
+        </Card.Root>
 
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-xl md:text-2xl font-semibold text-gray-900">
@@ -112,55 +112,55 @@ export default function PrintPreviewScreen() {
           onValueChange={(value) => setActiveTab(value as 'a4' | 'thermal')}
         >
           <Tabs.List className="flex w-full overflow-x-auto border-b border-gray-200 mb-6 -mx-4 md:mx-0 px-4 md:px-0">
-            <Tabs.Trigger
+            <Tabs.Tab
               value="a4"
               className="shrink-0 px-4 md:px-6 py-3 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-teal-600 data-[state=active]:text-teal-700 hover:text-gray-700"
             >
               A4 Prescription
-            </Tabs.Trigger>
-            <Tabs.Trigger
+            </Tabs.Tab>
+            <Tabs.Tab
               value="thermal"
               className="shrink-0 px-4 md:px-6 py-3 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-teal-600 data-[state=active]:text-teal-700 hover:text-gray-700"
             >
               Thermal
-            </Tabs.Trigger>
+            </Tabs.Tab>
           </Tabs.List>
 
-          <Tabs.Content value="a4">
-            <Card className="p-4 md:p-8 bg-white overflow-x-auto">
+          <Tabs.Panel value="a4">
+            <Card.Root className="p-4 md:p-8 bg-white overflow-x-auto">
               <div className="max-w-[210mm] mx-auto min-w-0">
                 {/* A4 Layout */}
                 <div className="text-center mb-6 md:mb-8 pb-3 md:pb-4 border-b-2 border-black">
-                  <div className="text-lg md:text-2xl font-bold break-words">
+                  <div className="text-lg md:text-2xl font-bold wrap-break-word">
                     {clinicName}
                   </div>
                 </div>
 
                 <div className="mb-6 space-y-2 text-sm md:text-base">
-                  <p className="break-words">
+                  <p className="wrap-break-word">
                     <strong>Patient Name:</strong> {patient.name}
                   </p>
-                  <p className="break-words">
+                  <p className="wrap-break-word">
                     <strong>Age:</strong> {patient.age || 'N/A'}{' '}
                     {patient.gender &&
                       `| Gender: ${patient.gender === 'M' ? 'Male' : 'Female'}`}
                   </p>
-                  <p className="break-words">
+                  <p className="wrap-break-word">
                     <strong>Mobile:</strong> {patient.mobile}
                   </p>
-                  <p className="break-words">
+                  <p className="wrap-break-word">
                     <strong>Date:</strong> {visitDate}
                   </p>
                 </div>
 
                 {visit.prescription.notes && (
-                  <div className="mb-6 text-sm md:text-base break-words">
+                  <div className="mb-6 text-sm md:text-base wrap-break-word">
                     <strong>Notes:</strong> {visit.prescription.notes}
                   </div>
                 )}
 
                 <div className="overflow-x-auto mb-6">
-                  <table className="w-full border-collapse border border-gray-300 min-w-[600px]">
+                  <table className="w-full border-collapse border border-gray-300 min-w-150">
                     <thead>
                       <tr className="bg-gray-100">
                         <th className="border border-gray-300 px-2 md:px-4 py-2 text-left text-sm md:text-base">
@@ -180,16 +180,16 @@ export default function PrintPreviewScreen() {
                     <tbody>
                       {visit.prescription.medicines.map((med, idx) => (
                         <tr key={idx}>
-                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base break-words">
+                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base wrap-break-word">
                             {med.name}
                           </td>
-                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base break-words">
+                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base wrap-break-word">
                             {med.dosage}
                           </td>
-                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base break-words">
+                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base wrap-break-word">
                             {med.duration}
                           </td>
-                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base break-words">
+                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base wrap-break-word">
                             {med.notes || '-'}
                           </td>
                         </tr>
@@ -211,11 +211,11 @@ export default function PrintPreviewScreen() {
                   <p className="mt-2">Doctor's Signature</p>
                 </div>
               </div>
-            </Card>
-          </Tabs.Content>
+            </Card.Root>
+          </Tabs.Panel>
 
-          <Tabs.Content value="thermal">
-            <Card className="p-4 bg-white">
+          <Tabs.Panel value="thermal">
+            <Card.Root className="p-4 bg-white">
               <div className="max-w-[70mm] mx-auto font-mono text-xs">
                 {/* Thermal Layout */}
                 <div className="text-center mb-4 pb-2 border-b border-dashed border-black">
@@ -268,8 +268,8 @@ export default function PrintPreviewScreen() {
                   <div className="text-xs">Doctor's Signature</div>
                 </div>
               </div>
-            </Card>
-          </Tabs.Content>
+            </Card.Root>
+          </Tabs.Panel>
         </Tabs.Root>
       </div>
     </div>

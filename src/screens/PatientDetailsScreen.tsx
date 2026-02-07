@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '../components/ui/Card';
 import { patientService } from '../services/patientService';
 import { visitService } from '../services/visitService';
-import { toast } from '../utils/toast';
 import type { Patient, Visit } from '../types';
+import { Card } from '@/components/ui/card';
+import { toast } from '@/components/ui/toast';
 
 export default function PatientDetailsScreen() {
   const { patientId } = useParams<{ patientId: string }>();
@@ -29,7 +24,10 @@ export default function PatientDetailsScreen() {
         setLoading(true);
         const patientData = await patientService.getById(patientId);
         if (!patientData) {
-          toast.error('Patient not found');
+          toast.add({
+            title: 'Patient not found',
+            type: 'error',
+          });
           navigate('/patients');
           return;
         }
@@ -41,7 +39,10 @@ export default function PatientDetailsScreen() {
         setVisitHistory(history);
       } catch (error) {
         console.error('Failed to load patient data:', error);
-        toast.error('Failed to load patient data');
+        toast.add({
+          title: 'Failed to load patient data',
+          type: 'error',
+        });
         navigate('/patients');
       } finally {
         setLoading(false);
@@ -71,13 +72,13 @@ export default function PatientDetailsScreen() {
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50 overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Patient Header */}
-        <Card className="mb-6 border-teal-200">
-          <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100">
-            <CardTitle className="text-2xl text-teal-900">
+        <Card.Root className="mb-6 border-teal-200">
+          <Card.Header className="bg-linear-to-r from-teal-50 to-white border-b border-teal-100">
+            <Card.Title className="text-2xl text-teal-900">
               {patient.name}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
+            </Card.Title>
+          </Card.Header>
+          <Card.Panel className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <span className="text-teal-600 font-medium">Age:</span>
@@ -116,16 +117,16 @@ export default function PatientDetailsScreen() {
                 </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </Card.Panel>
+        </Card.Root>
 
         {/* Visit History */}
         <div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Visit History</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <Card.Root>
+            <Card.Header>
+              <Card.Title className="text-lg">Visit History</Card.Title>
+            </Card.Header>
+            <Card.Panel>
               {visitHistory.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {visitHistory.map((visit) => (
@@ -163,8 +164,8 @@ export default function PatientDetailsScreen() {
               ) : (
                 <div className="text-sm text-gray-500">No previous visits</div>
               )}
-            </CardContent>
-          </Card>
+            </Card.Panel>
+          </Card.Root>
         </div>
       </div>
     </div>

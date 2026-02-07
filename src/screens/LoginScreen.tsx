@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Input, Button } from '../components/ui';
 import { authService } from '../services/authService';
-import { toast } from '../utils/toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/components/ui/toast';
 
 export default function LoginScreen() {
   const navigate = useNavigate();
@@ -44,13 +46,17 @@ export default function LoginScreen() {
         password: password,
       });
 
-      toast.success('Login successful!');
+      toast.add({
+        title: 'Login successful!',
+        type: 'success',
+      });
       navigate('/');
     } catch (error: any) {
       console.error('Login failed:', error);
-      toast.error(
-        error?.message || 'Login failed. Please check your credentials.',
-      );
+      toast.add({
+        title: error?.message || 'Login failed. Please check your credentials.',
+        type: 'error',
+      });
       setErrors({
         form: error?.message || 'Login failed. Please check your credentials.',
       });
@@ -78,33 +84,38 @@ export default function LoginScreen() {
                 {errors.form}
               </div>
             )}
+            <div className="flex flex-col items-start gap-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setErrors({ ...errors, email: '' });
+                }}
+                // error={errors.email}
+                placeholder="Enter your email"
+                autoFocus
+                disabled={loading}
+              />
+            </div>
 
-            <Input
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setErrors({ ...errors, email: '' });
-              }}
-              error={errors.email}
-              placeholder="Enter your email"
-              autoFocus
-              disabled={loading}
-            />
-
-            <Input
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setErrors({ ...errors, password: '' });
-              }}
-              error={errors.password}
-              placeholder="Enter your password"
-              disabled={loading}
-            />
+            <div className="flex flex-col items-start gap-2">
+              <Label htmlFor="password">Password *</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setErrors({ ...errors, password: '' });
+                }}
+                // error={errors.password}
+                placeholder="Enter your password"
+                disabled={loading}
+              />
+            </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
