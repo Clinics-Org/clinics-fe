@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { toast } from '@/components/ui/toast';
 import AddPatientModal from '@/components/all-patients/modals/add-patient-modal';
+import Users from 'lucide-react/dist/esm/icons/users';
 
 export default function AllPatientsScreen() {
   const navigate = useNavigate();
@@ -80,7 +81,7 @@ export default function AllPatientsScreen() {
     }
 
     try {
-      const patient = await createPatientMutation.mutateAsync({
+      await createPatientMutation.mutateAsync({
         name: newPatient.name.trim(),
         mobile: formatPhoneForAPI(newPatient.mobile),
         age: newPatient.age ? Number(newPatient.age) : undefined,
@@ -128,17 +129,13 @@ export default function AllPatientsScreen() {
     <div className="h-screen bg-background overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">
         {/* Header - Compact on Mobile */}
-        <div className="mb-4 md:mb-6">
+        <div className="mb-4 md:mb-3">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-3xl font-bold text-foreground">
-                All Patients
-              </h1>
-              <p className="text-xs md:text-base text-muted-foreground mt-1">
-                {filteredPatients.length}{' '}
-                {filteredPatients.length === 1 ? 'patient' : 'patients'}
-                {patientSearch && ` found`}
-              </p>
+              <h6 className="text-sm md:text-sm font-medium text-foreground flex items-center gap-2">
+                <Users className="size-4" /> All Patients
+              </h6>
+              <h1 className="text-xl md:text-3xl font-bold text-foreground"></h1>
             </div>
             <Button
               onClick={handleAddNewPatient}
@@ -166,7 +163,7 @@ export default function AllPatientsScreen() {
             {filteredPatients.map((patient) => (
               <Card.Root
                 key={patient.id}
-                className="border-teal-200 hover:border-teal-400 hover:shadow-lg transition-all cursor-pointer"
+                className="border-primary-foreground hover:border-teal-400 hover:shadow-lg transition-all md:border-0"
               >
                 <Card.Panel className="p-3 md:p-5">
                   <button
@@ -177,16 +174,11 @@ export default function AllPatientsScreen() {
                     {/* Mobile View - Compact Layout */}
                     <div className="md:hidden">
                       <div className="flex items-center gap-3">
-                        {/* Avatar */}
-                        <div className="w-12 h-12 bg-linear-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base shrink-0">
-                          {patient.name.charAt(0).toUpperCase()}
-                        </div>
-
                         {/* Patient Info - 2 Column Grid */}
                         <div className="flex-1 min-w-0 grid grid-cols-2 gap-x-3 gap-y-1.5">
                           {/* Name - Full Width */}
                           <div className="col-span-2">
-                            <h3 className="text-base font-semibold text-gray-900 truncate">
+                            <h3 className="text-base text-gray-900 truncate flex-1">
                               {patient.name}
                             </h3>
                           </div>
@@ -229,16 +221,11 @@ export default function AllPatientsScreen() {
 
                     {/* Desktop View - Column Layout */}
                     <div className="hidden md:flex items-center gap-4">
-                      {/* Avatar */}
-                      <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0">
-                        {patient.name.charAt(0).toUpperCase()}
-                      </div>
-
                       {/* Column-based layout for desktop */}
                       <div className="flex-1 min-w-0 grid grid-cols-[minmax(150px,1fr)_minmax(120px,auto)_minmax(80px,auto)_minmax(100px,auto)] gap-4 items-center">
                         {/* Name Column */}
                         <div className="min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate">
+                          <h3 className="text-base text-gray-900 truncate flex-1">
                             {patient.name}
                           </h3>
                         </div>

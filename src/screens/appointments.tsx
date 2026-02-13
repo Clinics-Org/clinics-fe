@@ -16,6 +16,7 @@ import { formatTimeShort } from '@/utils/date-format';
 import type { Appointment } from '@/types';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
+import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 
 export default function AppointmentsScreen() {
   const { data: clinic } = useCurrentClinic();
@@ -26,8 +27,8 @@ export default function AppointmentsScreen() {
   const { values, updateFilter, updateMultipleFilters } = useFilters({
     initialValue: {
       SEARCH: '',
-      DATE: dayjs().format('YYYY-MM-DD'),
-      DOCTOR_ID: '',
+      DATE: '',
+      DOCTOR_ID: 'all',
       PAGE: 1,
       PAGE_SIZE: 20,
     },
@@ -130,19 +131,12 @@ export default function AppointmentsScreen() {
     <div className="h-screen bg-background overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">
         {/* Header - Compact on Mobile */}
-        <div className="mb-4 md:mb-6">
+        <div className="mb-4 md:mb-3">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-3xl font-bold text-foreground">
-                Appointments
-              </h1>
-              <p className="text-xs md:text-base text-muted-foreground mt-1">
-                {filteredAppointments.length}{' '}
-                {filteredAppointments.length === 1
-                  ? 'appointment'
-                  : 'appointments'}
-                {values.SEARCH && ` found`}
-              </p>
+              <h6 className="text-sm md:text-sm font-medium text-foreground flex items-center gap-2">
+                <CalendarDays className="size-4" /> Appointments
+              </h6>
             </div>
             <Button onClick={handleCreateAppointment} size="sm">
               + Create
@@ -173,7 +167,7 @@ export default function AppointmentsScreen() {
           {doctors.length > 0 && (
             <div className="flex flex-col items-start gap-2 sm:w-48 md:w-56">
               <Select.Root
-                value={values.DOCTOR_ID || undefined}
+                value={values.DOCTOR_ID || 'all'}
                 onValueChange={(value) => {
                   updateMultipleFilters({ DOCTOR_ID: value || '', PAGE: 1 });
                 }}
@@ -223,141 +217,130 @@ export default function AppointmentsScreen() {
         </div>
 
         {filteredAppointments.length > 0 ? (
-          <div className="grid gap-3">
+          <div className="grid gap-2">
             {filteredAppointments.map((appointment) => (
               <Card.Root
                 key={appointment.id}
-                className="border-teal-200 hover:border-teal-400 hover:shadow-lg transition-all"
+                className="border-primary-foreground hover:border-teal-400 hover:shadow-lg transition-all md:border-0"
               >
-                <Card.Panel className="p-3 md:p-5">
-                  <div className="flex items-center md:items-start gap-3 md:gap-4">
-                    {/* Avatar */}
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-linear-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-base md:text-lg shrink-0">
-                      {appointment.name?.charAt(0).toUpperCase() || '?'}
-                    </div>
-
-                    {/* Main Content */}
-                    <div className="flex-1 min-w-0">
-                      {/* Mobile View - Stacked */}
-                      <div className="md:hidden space-y-2">
-                        {/* Name and Status Row */}
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="text-base font-semibold text-gray-900 truncate flex-1">
-                            {appointment.name || 'Unknown'}
-                          </h3>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ${getStatusColor(appointment.appointment_status)}`}
-                          >
-                            {getStatusLabel(appointment.appointment_status)}
-                          </span>
-                        </div>
-
-                        {/* Mobile Number */}
-                        {appointment.mobile_number && (
-                          <div className="text-sm text-muted-foreground">
-                            Mobile: {appointment.mobile_number}
-                          </div>
-                        )}
-
-                        {/* Doctor */}
-                        {appointment.doctor && (
-                          <div className="text-sm text-muted-foreground">
-                            Doctor: {appointment.doctor.name}
-                          </div>
-                        )}
-
-                        {/* Appointment Time */}
-                        {formatAppointmentTime(appointment) && (
-                          <div className="text-sm text-muted-foreground">
-                            Time: {formatAppointmentTime(appointment)}
-                          </div>
-                        )}
-
-                        {/* Check In Button - Mobile */}
-                        {appointment.appointment_status === 'WAITING' && (
-                          <div className="pt-1">
-                            <Button
-                              disabled={
-                                updateAppointmentStatusMutation.isPending
-                              }
-                              size="sm"
-                              onClick={(e) =>
-                                handleMarkCheckIn(appointment.id, e)
-                              }
-                              className="w-full"
-                            >
-                              Mark Check In
-                            </Button>
-                          </div>
-                        )}
+                <Card.Panel className="p-3">
+                  {/* Main Content */}
+                  <div className="flex-1 min-w-0">
+                    {/* Mobile View - Stacked */}
+                    <div className="md:hidden space-y-2">
+                      {/* Name and Status Row */}
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-base text-gray-900 truncate flex-1">
+                          {appointment.name || 'Unknown'}
+                        </h3>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ${getStatusColor(appointment.appointment_status)}`}
+                        >
+                          {getStatusLabel(appointment.appointment_status)}
+                        </span>
                       </div>
 
-                      {/* Desktop View - Column-based layout */}
-                      <div className="hidden md:flex items-center gap-4 w-full">
-                        <div className="flex-1 min-w-0 grid grid-cols-[minmax(150px,1fr)_minmax(80px,auto)_minmax(180px,auto)_minmax(200px,auto)] gap-4 items-center">
-                          {/* Name Column */}
-                          <div className="min-w-0">
-                            <h3 className="text-lg font-semibold text-gray-900 truncate">
-                              {appointment.name || 'Unknown'}
-                            </h3>
-                          </div>
+                      {/* Mobile Number */}
+                      {appointment.mobile_number && (
+                        <div className="text-xs text-muted-foreground">
+                          Mobile: {appointment.mobile_number}
+                        </div>
+                      )}
 
-                          {/* Mobile Column */}
-                          <div className="min-w-0">
-                            {appointment.mobile_number ? (
-                              <span className="text-sm text-gray-600 whitespace-nowrap">
-                                {appointment.mobile_number}
-                              </span>
-                            ) : (
-                              <span className="text-sm text-gray-400">—</span>
-                            )}
-                          </div>
+                      {/* Doctor */}
+                      {appointment.doctor && (
+                        <div className="text-xs text-muted-foreground">
+                          Doctor: {appointment.doctor.name}
+                        </div>
+                      )}
 
-                          {/* Doctor Column */}
-                          <div className="min-w-0">
-                            {appointment.doctor ? (
-                              <span className="text-sm text-gray-600 whitespace-nowrap">
-                                {appointment.doctor.name}
-                              </span>
-                            ) : (
-                              <span className="text-sm text-gray-400">—</span>
-                            )}
-                          </div>
+                      {/* Appointment Time */}
+                      {formatAppointmentTime(appointment) && (
+                        <div className="text-xs text-muted-foreground">
+                          Time: {formatAppointmentTime(appointment)}
+                        </div>
+                      )}
 
-                          {/* Appointment Time Column */}
-                          <div className="min-w-0">
-                            {formatAppointmentTime(appointment) ? (
-                              <span className="text-sm text-gray-600 whitespace-nowrap">
-                                {formatAppointmentTime(appointment)}
-                              </span>
-                            ) : (
-                              <span className="text-sm text-gray-400">—</span>
-                            )}
-                          </div>
+                      {/* Check In Button - Mobile */}
+                      {appointment.appointment_status === 'WAITING' && (
+                        <div className="pt-1">
+                          <Button
+                            disabled={updateAppointmentStatusMutation.isPending}
+                            size="sm"
+                            onClick={(e) =>
+                              handleMarkCheckIn(appointment.id, e)
+                            }
+                            className="w-full"
+                          >
+                            Check In
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Desktop View - Column-based layout */}
+                    <div className="hidden md:flex items-center gap-4 w-full">
+                      <div className="flex-1 min-w-0 grid grid-cols-[minmax(120px,1fr)_minmax(80px,auto)_minmax(150px,auto)_minmax(170px,auto)] gap-2 items-center">
+                        {/* Name Column */}
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-medium text-gray-900 truncate">
+                            {appointment.name || 'Unknown'}
+                          </h3>
                         </div>
 
-                        {/* Status Badge and Check In Button - Desktop */}
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(appointment.appointment_status)}`}
-                          >
-                            {getStatusLabel(appointment.appointment_status)}
-                          </span>
-                          {appointment.appointment_status === 'WAITING' && (
-                            <Button
-                              size="sm"
-                              disabled={
-                                updateAppointmentStatusMutation.isPending
-                              }
-                              onClick={(e) =>
-                                handleMarkCheckIn(appointment.id, e)
-                              }
-                              className="whitespace-nowrap"
-                            >
-                              Mark Check In
-                            </Button>
+                        {/* Mobile Column */}
+                        <div className="min-w-0">
+                          {appointment.mobile_number ? (
+                            <span className="text-sm text-gray-600 whitespace-nowrap">
+                              {appointment.mobile_number}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-400">—</span>
                           )}
                         </div>
+
+                        {/* Doctor Column */}
+                        <div className="min-w-0">
+                          {appointment.doctor ? (
+                            <span className="text-sm text-gray-600 whitespace-nowrap">
+                              {appointment.doctor.name}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-400">—</span>
+                          )}
+                        </div>
+
+                        {/* Appointment Time Column */}
+                        <div className="min-w-0">
+                          {formatAppointmentTime(appointment) ? (
+                            <span className="text-sm text-gray-600 whitespace-nowrap">
+                              {formatAppointmentTime(appointment)}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-400">—</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Status Badge and Check In Button - Desktop */}
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(appointment.appointment_status)}`}
+                        >
+                          {getStatusLabel(appointment.appointment_status)}
+                        </span>
+                        {appointment.appointment_status === 'WAITING' && (
+                          <Button
+                            size="sm"
+                            disabled={updateAppointmentStatusMutation.isPending}
+                            onClick={(e) =>
+                              handleMarkCheckIn(appointment.id, e)
+                            }
+                            className="whitespace-nowrap"
+                          >
+                            Check In
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
