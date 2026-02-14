@@ -188,7 +188,7 @@ export default function AllPatientsScreen() {
               <h1 className="text-xl md:text-3xl font-bold text-foreground"></h1>
             </div>
             <Button onClick={handleAddNewPatient} size="sm">
-              + Add
+              + Create
             </Button>
           </div>
         </div>
