@@ -4,19 +4,59 @@ import { Card } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { Table } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { useFilters } from '@/hooks';
 import { useModal } from '@/hooks/use-modal';
+import { cn } from '@/lib/utils';
 import {
   useAppointments,
   useUpdateAppointmentStatus,
 } from '@/queries/appointments.queries';
 import { useCurrentClinic } from '@/queries/clinic.queries';
+import { APPOINTMENT_STATUS, type Appointment } from '@/types';
 import { formatTimeShort } from '@/utils/date-format';
-import type { Appointment } from '@/types';
 import dayjs from 'dayjs';
-import { useMemo } from 'react';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
+import { useMemo } from 'react';
+
+const STATUS_LABEL = {
+  WAITING: 'Waiting',
+  CHECKED_IN: 'Checked In',
+  NO_SHOW: 'No Show',
+} as const;
+
+const Lable = ({ status }: { status: keyof typeof APPOINTMENT_STATUS }) => {
+  return (
+    <span
+      className={cn(`px-2 py-1 rounded-full text-xs font-normal text-white`, {
+        'bg-yellow-500': status === APPOINTMENT_STATUS.WAITING,
+        'bg-primary': status === APPOINTMENT_STATUS.CHECKED_IN,
+        'bg-red-800': status === APPOINTMENT_STATUS.NO_SHOW,
+      })}
+    >
+      {STATUS_LABEL[status]}
+    </span>
+  );
+};
+
+const formatAppointmentTime = (appointment: Appointment) => {
+  if (appointment.slot) {
+    const date = dayjs(appointment.slot.date).format('DD MMM YYYY');
+    const time = formatTimeShort(appointment.slot.start_time);
+    return `${date} | ${time}`;
+  }
+  if (appointment.appointment_date_time) {
+    try {
+      return dayjs(appointment.appointment_date_time).format(
+        'DD MMM YYYY | hh:mm A',
+      );
+    } catch {
+      return appointment.appointment_date_time;
+    }
+  }
+  return '-';
+};
 
 export default function AppointmentsScreen() {
   const { data: clinic } = useCurrentClinic();
@@ -60,10 +100,6 @@ export default function AppointmentsScreen() {
     });
   }, [values.SEARCH, appointmentsResult]);
 
-  const handleCreateAppointment = () => {
-    createAppointmentsModal.open();
-  };
-
   const handleMarkCheckIn = async (
     appointmentId: string,
     e: React.MouseEvent,
@@ -73,7 +109,7 @@ export default function AppointmentsScreen() {
     await toast.promise(
       updateAppointmentStatusMutation.mutateAsync({
         appointmentId,
-        status: 'CHECKED_IN',
+        status: APPOINTMENT_STATUS.CHECKED_IN,
       }),
       {
         loading: 'Marking appointment as checked in...',
@@ -82,48 +118,6 @@ export default function AppointmentsScreen() {
       },
     );
   };
-
-  const formatAppointmentTime = (appointment: Appointment) => {
-    if (appointment.slot) {
-      const date = dayjs(appointment.slot.date).format('DD MMM YYYY');
-      const time = formatTimeShort(appointment.slot.start_time);
-      return `${date} | ${time}`;
-    }
-    if (appointment.appointment_date_time) {
-      try {
-        return dayjs(appointment.appointment_date_time).format(
-          'DD MMM YYYY | hh:mm A',
-        );
-      } catch {
-        return appointment.appointment_date_time;
-      }
-    }
-    return null;
-  };
-
-  const getStatusColor = (status: string) => {
-    const s = status.toLowerCase();
-    if (s === 'waiting') return 'bg-yellow-100 text-yellow-800';
-    if (s === 'checked_in') return 'bg-teal-100 text-teal-800';
-    if (s === 'no_show') return 'bg-red-100 text-red-800';
-    return 'bg-gray-100 text-gray-800';
-  };
-
-  const getStatusLabel = (status: string) => {
-    const s = status.toLowerCase();
-    if (s === 'waiting') return 'Waiting';
-    if (s === 'checked_in') return 'Checked In';
-    if (s === 'no_show') return 'No Show';
-    return status;
-  };
-
-  if (loading) {
-    return (
-      <div className="h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground">Loading appointments...</div>
-      </div>
-    );
-  }
 
   const selectedDoc = doctors.find((doc) => doc.id === values.DOCTOR_ID);
 
@@ -138,14 +132,14 @@ export default function AppointmentsScreen() {
                 <CalendarDays className="size-4" /> Appointments
               </h6>
             </div>
-            <Button onClick={handleCreateAppointment} size="sm">
+            <Button onClick={createAppointmentsModal.open} size="sm">
               + Create
             </Button>
           </div>
         </div>
 
         {/* Filters - Compact on Mobile */}
-        <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-2 md:gap-4">
+        <div className="mb-3 flex flex-col sm:flex-row gap-2 md:gap-4">
           <div className="flex-1">
             <Input
               type="text"
@@ -199,7 +193,7 @@ export default function AppointmentsScreen() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
+              size="xs"
               onClick={() => updateFilter('PAGE', Math.max(1, values.PAGE - 1))}
               disabled={values.PAGE <= 1}
             >
@@ -207,7 +201,7 @@ export default function AppointmentsScreen() {
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              size="xs"
               onClick={() => updateFilter('PAGE', Math.max(1, values.PAGE + 1))}
               disabled={values.PAGE >= totalPages}
             >
@@ -215,161 +209,162 @@ export default function AppointmentsScreen() {
             </Button>
           </div>
         </div>
+        {loading ? (
+          <div className="h-96 bg-background flex items-center justify-center">
+            <div className="text-muted-foreground">Loading appointments...</div>
+          </div>
+        ) : (
+          <>
+            {filteredAppointments.length > 0 ? (
+              <>
+                {/* Desktop Table  View */}
+                <Table.Root className="md:block hidden rounded-lg overflow-hidden">
+                  <Table.Header className="bg-primary-foreground">
+                    <Table.Row>
+                      <Table.Head className="text-primary font-normal">
+                        Name
+                      </Table.Head>
+                      <Table.Head className="text-primary font-normal">
+                        Mobile
+                      </Table.Head>
+                      <Table.Head className="text-primary font-normal">
+                        Doctor
+                      </Table.Head>
+                      <Table.Head className="text-primary font-normal">
+                        Time
+                      </Table.Head>
+                      <Table.Head className="text-primary font-normal">
+                        Status
+                      </Table.Head>
+                    </Table.Row>
+                  </Table.Header>
+                  {filteredAppointments.map((appointment) => {
+                    const status = appointment.appointment_status;
+                    return (
+                      <Table.Row
+                        key={appointment.id}
+                        className="hover:bg-teal-50/50"
+                      >
+                        <Table.Cell className="min-w-62.5">
+                          <h6 className="text-sm text-neutral-800 truncate flex-1 capitalize">
+                            {appointment.name || '-'}
+                          </h6>
+                        </Table.Cell>
+                        <Table.Cell className="min-w-62.5 text-sm text-neutral-800 truncate flex-1">
+                          {appointment.mobile_number || '-'}
+                        </Table.Cell>
+                        <Table.Cell className="min-w-62.5 text-sm text-neutral-800 truncate flex-1 capitalize">
+                          {appointment.doctor?.name || '-'}
+                        </Table.Cell>
+                        <Table.Cell className="min-w-62.5 text-sm text-neutral-800 truncate flex-1">
+                          {formatAppointmentTime(appointment)}
+                        </Table.Cell>
+                        <Table.Cell className="min-w-62.5 text-sm text-neutral-800 truncate flex-1">
+                          <div className="flex items-center gap-3 shrink-0">
+                            <Lable status={status} />
+                            {status === APPOINTMENT_STATUS.WAITING && (
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                disabled={
+                                  updateAppointmentStatusMutation.isPending
+                                }
+                                onClick={(e) =>
+                                  handleMarkCheckIn(appointment.id, e)
+                                }
+                                className="whitespace-nowrap"
+                              >
+                                Check In
+                              </Button>
+                            )}
+                          </div>
+                        </Table.Cell>
+                      </Table.Row>
+                    );
+                  })}
+                </Table.Root>
 
-        {filteredAppointments.length > 0 ? (
-          <div className="grid gap-2">
-            {filteredAppointments.map((appointment) => (
-              <Card.Root
-                key={appointment.id}
-                className="border-primary-foreground hover:border-teal-400 hover:shadow-lg transition-all md:border-0"
-              >
-                <Card.Panel className="p-3">
-                  {/* Main Content */}
-                  <div className="flex-1 min-w-0">
-                    {/* Mobile View - Stacked */}
-                    <div className="md:hidden space-y-2">
-                      {/* Name and Status Row */}
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-base text-gray-900 truncate flex-1">
-                          {appointment.name || 'Unknown'}
-                        </h3>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ${getStatusColor(appointment.appointment_status)}`}
-                        >
-                          {getStatusLabel(appointment.appointment_status)}
-                        </span>
-                      </div>
+                {/* Mobile card view */}
+                <div className="md:hidden grid gap-2 ">
+                  {filteredAppointments.map((appointment) => (
+                    <Card.Root
+                      key={appointment.id}
+                      className="border-neutral-200 transition-all md:border-0"
+                    >
+                      <Card.Panel className="p-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="text-base text-neutral-800 truncate flex-1">
+                                {appointment.name || 'Unknown'}
+                              </h3>
+                              {appointment.appointment_status ===
+                                APPOINTMENT_STATUS.WAITING && (
+                                <Button
+                                  disabled={
+                                    updateAppointmentStatusMutation.isPending
+                                  }
+                                  size="xs"
+                                  onClick={(e) =>
+                                    handleMarkCheckIn(appointment.id, e)
+                                  }
+                                  variant="outline"
+                                >
+                                  Check In
+                                </Button>
+                              )}
+                            </div>
 
-                      {/* Mobile Number */}
-                      {appointment.mobile_number && (
-                        <div className="text-xs text-muted-foreground">
-                          Mobile: {appointment.mobile_number}
+                            {appointment.mobile_number && (
+                              <div className="text-xs text-muted-foreground">
+                                Mobile: {appointment.mobile_number}
+                              </div>
+                            )}
+
+                            {appointment.doctor && (
+                              <div className="text-xs text-muted-foreground">
+                                Doctor: {appointment.doctor.name}
+                              </div>
+                            )}
+                            <div className="flex items-start justify-between gap-2">
+                              {formatAppointmentTime(appointment) && (
+                                <div className="text-xs text-muted-foreground">
+                                  Time: {formatAppointmentTime(appointment)}
+                                </div>
+                              )}
+                              <Lable status={appointment.appointment_status} />
+                            </div>
+                          </div>
                         </div>
-                      )}
-
-                      {/* Doctor */}
-                      {appointment.doctor && (
-                        <div className="text-xs text-muted-foreground">
-                          Doctor: {appointment.doctor.name}
-                        </div>
-                      )}
-
-                      {/* Appointment Time */}
-                      {formatAppointmentTime(appointment) && (
-                        <div className="text-xs text-muted-foreground">
-                          Time: {formatAppointmentTime(appointment)}
-                        </div>
-                      )}
-
-                      {/* Check In Button - Mobile */}
-                      {appointment.appointment_status === 'WAITING' && (
-                        <div className="pt-1">
-                          <Button
-                            disabled={updateAppointmentStatusMutation.isPending}
-                            size="sm"
-                            onClick={(e) =>
-                              handleMarkCheckIn(appointment.id, e)
-                            }
-                            className="w-full"
-                          >
-                            Check In
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Desktop View - Column-based layout */}
-                    <div className="hidden md:flex items-center gap-4 w-full">
-                      <div className="flex-1 min-w-0 grid grid-cols-[minmax(120px,1fr)_minmax(80px,auto)_minmax(150px,auto)_minmax(170px,auto)] gap-2 items-center">
-                        {/* Name Column */}
-                        <div className="min-w-0">
-                          <h3 className="text-sm font-medium text-gray-900 truncate">
-                            {appointment.name || 'Unknown'}
-                          </h3>
-                        </div>
-
-                        {/* Mobile Column */}
-                        <div className="min-w-0">
-                          {appointment.mobile_number ? (
-                            <span className="text-sm text-gray-600 whitespace-nowrap">
-                              {appointment.mobile_number}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-gray-400">—</span>
-                          )}
-                        </div>
-
-                        {/* Doctor Column */}
-                        <div className="min-w-0">
-                          {appointment.doctor ? (
-                            <span className="text-sm text-gray-600 whitespace-nowrap">
-                              {appointment.doctor.name}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-gray-400">—</span>
-                          )}
-                        </div>
-
-                        {/* Appointment Time Column */}
-                        <div className="min-w-0">
-                          {formatAppointmentTime(appointment) ? (
-                            <span className="text-sm text-gray-600 whitespace-nowrap">
-                              {formatAppointmentTime(appointment)}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-gray-400">—</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Status Badge and Check In Button - Desktop */}
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span
-                          className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(appointment.appointment_status)}`}
-                        >
-                          {getStatusLabel(appointment.appointment_status)}
-                        </span>
-                        {appointment.appointment_status === 'WAITING' && (
-                          <Button
-                            size="sm"
-                            disabled={updateAppointmentStatusMutation.isPending}
-                            onClick={(e) =>
-                              handleMarkCheckIn(appointment.id, e)
-                            }
-                            className="whitespace-nowrap"
-                          >
-                            Check In
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                      </Card.Panel>
+                    </Card.Root>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <Card.Root className="border-teal-200">
+                <Card.Panel className="p-12 text-center">
+                  <div className="text-gray-500">
+                    {values.SEARCH ? (
+                      <>
+                        <p className="text-lg font-medium mb-2">
+                          No appointments found
+                        </p>
+                        <p className="text-sm">Try a different search term</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-lg font-medium mb-2">
+                          No appointments yet
+                        </p>
+                        <p className="text-sm">Appointments will appear here</p>
+                      </>
+                    )}
                   </div>
                 </Card.Panel>
               </Card.Root>
-            ))}
-          </div>
-        ) : (
-          <Card.Root className="border-teal-200">
-            <Card.Panel className="p-12 text-center">
-              <div className="text-gray-500">
-                {values.SEARCH ? (
-                  <>
-                    <p className="text-lg font-medium mb-2">
-                      No appointments found
-                    </p>
-                    <p className="text-sm">Try a different search term</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-lg font-medium mb-2">
-                      No appointments yet
-                    </p>
-                    <p className="text-sm">Appointments will appear here</p>
-                  </>
-                )}
-              </div>
-            </Card.Panel>
-          </Card.Root>
+            )}
+          </>
         )}
       </div>
 
