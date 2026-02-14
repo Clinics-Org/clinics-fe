@@ -35,7 +35,7 @@ interface ToastProviderProps extends Toast.Provider.Props {
 
 function ToastProvider({
   children,
-  position = 'bottom-right',
+  position = 'top-right',
   ...props
 }: ToastProviderProps) {
   return (
@@ -46,7 +46,7 @@ function ToastProvider({
   );
 }
 
-function Toasts({ position = 'bottom-right' }: { position: ToastPosition }) {
+function Toasts({ position = 'top-right' }: { position: ToastPosition }) {
   const { toasts } = Toast.useToastManager();
   const isTop = position.startsWith('top');
 
