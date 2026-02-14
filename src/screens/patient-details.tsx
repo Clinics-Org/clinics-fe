@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePatient } from '../queries/patients.queries';
 import { useVisitsByPatient } from '../queries/visits.queries';
-import type { Visit } from '../types';
+import type { Visit } from '@/types/api';
 import { Card } from '@/components/ui/card';
 import { toast } from '@/components/ui/toast';
 import dayjs from 'dayjs';

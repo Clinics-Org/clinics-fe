@@ -12,7 +12,7 @@ import { usePatientSearchLazy } from '@/queries/patients.queries';
 import { useAvailableSlots, useBookSlot } from '@/queries/slots.queries';
 import { bookSlotSchema } from '@/schema/book-slot.schema';
 import { mobileSearchSchema } from '@/schema/mobile-search-schema';
-import type { AvailableSlot, Patient } from '@/types';
+import type { AvailableSlot, Patient } from '@/types/api';
 import {
   getErrorMessage,
   hasValidationErrors,

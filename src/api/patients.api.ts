@@ -3,7 +3,7 @@
 
 import { get, post } from './client';
 import { ApiError } from '@/lib/query-client';
-import type { Patient } from '../types';
+import type { Patient } from '@/types/api';
 import dayjs from 'dayjs';
 
 export interface PatientSearchResult extends Patient {

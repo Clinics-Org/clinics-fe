@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import type { Visit } from '../types';
+import type { Visit } from '@/types/api';
 import { usePatient } from '../queries/patients.queries';
 import {
   useVisit,

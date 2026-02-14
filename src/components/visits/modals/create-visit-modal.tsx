@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup } from '@/components/ui/radio-group';
 import { Select } from '@/components/ui/select';
-import type { Patient } from '@/types';
+import type { Patient } from '@/types/api';
 import { formatPhoneInput } from '@/utils/phone-validation';
 
 type Step = 'mobile' | 'patient-form';

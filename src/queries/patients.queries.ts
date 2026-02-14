@@ -5,7 +5,7 @@ import {
   queryOptions,
 } from '@tanstack/react-query';
 import { patientService, PatientSearchResult } from '../api/patients.api';
-import type { Patient } from '../types';
+import type { Patient } from '@/types/api';
 import { queryKeys } from './query-keys';
 
 export const patientQueryOptions = {

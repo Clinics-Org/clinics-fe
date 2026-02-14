@@ -6,14 +6,15 @@ import {
   queryOptions,
 } from '@tanstack/react-query';
 import { visitService } from '../api/visits.api';
-import type { Visit } from '../types';
+import type { Visit } from '@/types/api';
 import { queryKeys } from './query-keys';
+import { VISIT_STATUS } from '@/constants/api';
 
 interface VisitListParams {
   page?: number;
   pageSize?: number;
   date?: string;
-  visitStatus?: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  visitStatus?: keyof typeof VISIT_STATUS;
   doctorId?: string;
 }
 

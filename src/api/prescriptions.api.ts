@@ -5,7 +5,7 @@
 
 import { get, post, put } from './client';
 import { ApiError } from '@/lib/query-client';
-import type { Prescription, Medicine, FollowUp } from '../types';
+import type { Prescription, Medicine, FollowUp } from '@/types/api';
 import { visitService } from './visits.api';
 import dayjs from 'dayjs';
 

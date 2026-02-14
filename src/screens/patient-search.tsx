@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Patient } from '../types';
+import type { Patient } from '@/types/api';
 import {
   useCreatePatient,
   usePatientSearch,

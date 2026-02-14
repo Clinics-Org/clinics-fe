@@ -1,7 +1,7 @@
 // Clinic service - Fetches clinic data from API
 
 import { get } from './client';
-import type { Clinic } from '../types';
+import type { Clinic } from '@/types/api';
 
 export const clinicService = {
   /**

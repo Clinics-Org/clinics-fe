@@ -7,7 +7,7 @@ import {
 } from '@tanstack/react-query';
 import { prescriptionService } from '../api/prescriptions.api';
 import { visitService } from '../api/visits.api';
-import type { Prescription, Visit } from '../types';
+import type { Prescription, Visit } from '@/types/api';
 import { queryKeys } from './query-keys';
 
 export const prescriptionQueryOptions = {

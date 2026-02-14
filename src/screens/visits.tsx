@@ -6,6 +6,9 @@ import { Select } from '@/components/ui/select';
 import { DataTable } from '@/components/ui/table-ui';
 import { toast } from '@/components/ui/toast';
 import CreateVisitModal from '@/components/visits/modals/create-visit-modal';
+import { VISIT_STATUS } from '@/constants/api';
+import { useFilters } from '@/hooks';
+import { useModal } from '@/hooks/use-modal';
 import { cn } from '@/lib/utils';
 import { useCurrentClinic } from '@/queries/clinic.queries';
 import {
@@ -14,7 +17,7 @@ import {
 } from '@/queries/patients.queries';
 import { useCreateVisit, useVisitsList } from '@/queries/visits.queries';
 import { useFiltersStore } from '@/stores/filters.store';
-import type { Patient, Visit, VISIT_STATUS } from '@/types';
+import type { Patient, Visit } from '@/types/api';
 import {
   extractValidationErrors,
   getErrorMessage,
@@ -34,15 +37,40 @@ const STATUS_LABEL = {
   WAITING: 'Waiting',
   IN_PROGRESS: 'In progress',
   COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
 } as const;
+
+const STATUS_FILTER = [
+  {
+    lable: 'All Statuses',
+    value: 'ALL',
+  },
+
+  {
+    lable: 'Waiting',
+    value: 'WAITING',
+  },
+  {
+    lable: 'In Progress',
+    value: 'IN_PROGRESS',
+  },
+  {
+    lable: 'Completed',
+    value: 'COMPLETED',
+  },
+  {
+    lable: 'Cancelled',
+    value: 'CANCELLED',
+  },
+];
 
 const Lable = ({ status }: { status: keyof typeof VISIT_STATUS }) => {
   return (
     <span
       className={cn(`px-2 py-1 rounded-full text-xs font-normal text-white`, {
-        'bg-yellow-500': status === 'WAITING',
-        'bg-primary': status === 'IN_PROGRESS',
-        'bg-red-800': status === 'COMPLETED',
+        'bg-yellow-500': status === VISIT_STATUS.WAITING,
+        'bg-primary': status === VISIT_STATUS.IN_PROGRESS,
+        'bg-red-800': status === VISIT_STATUS.COMPLETED,
       })}
     >
       {STATUS_LABEL[status]}
@@ -90,24 +118,31 @@ export const appointmentColumns: ColumnDef<Visit>[] = [
   },
 ];
 
+type FilterValues = {
+  SEARCH: string;
+  DATE: string;
+  DOCTOR_ID: string;
+  PAGE: number;
+  VISIT_STATUS: keyof typeof VISIT_STATUS | 'ALL';
+  PAGE_SIZE: number;
+};
+
 export default function VisitsScreen() {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { values, updateFilter, updateMultipleFilters } =
+    useFilters<FilterValues>({
+      initialValue: {
+        SEARCH: '',
+        DATE: '',
+        DOCTOR_ID: 'ALL',
+        PAGE: 1,
+        VISIT_STATUS: VISIT_STATUS.WAITING,
+        PAGE_SIZE: 20,
+      },
+      useQueryParams: true,
+    });
 
-  const [selectedDate, setSelectedDate] = useState<string>(() =>
-    dayjs().format('YYYY-MM-DD'),
-  );
-
-  const [selectedDoctorFilter, setSelectedDoctorFilter] = useState<string>('');
-
-  const [page, setPage] = useState(1);
-  const pageSize = 20;
-
-  const selectedVisitStatus = useFiltersStore((state) => state.visitStatus);
-  const setSelectedVisitStatus = useFiltersStore(
-    (state) => state.setVisitStatus,
-  );
+  const createVisitModal = useModal();
 
   const [step, setStep] = useState<'mobile' | 'patient-form'>('mobile');
   const [mobileNumber, setMobileNumber] = useState('');
@@ -130,34 +165,25 @@ export default function VisitsScreen() {
   const patientSearchMutation = usePatientSearchLazy();
   const searching = patientSearchMutation.isPending;
 
-  const visitStatus =
-    selectedVisitStatus && selectedVisitStatus !== 'ALL'
-      ? (selectedVisitStatus as
-          | 'WAITING'
-          | 'IN_PROGRESS'
-          | 'COMPLETED'
-          | 'CANCELLED')
-      : undefined;
-
   const doctorId =
-    selectedDoctorFilter && selectedDoctorFilter !== 'all'
-      ? selectedDoctorFilter
+    values.DOCTOR_ID && values.DOCTOR_ID !== 'ALL'
+      ? values.DOCTOR_ID
       : undefined;
-
   const { data: visitsResult, isLoading: loading } = useVisitsList({
-    page,
-    pageSize,
-    date: selectedDate,
-    visitStatus,
+    page: values.PAGE,
+    pageSize: values.PAGE_SIZE,
+    date: values.DATE,
+    visitStatus:
+      values.VISIT_STATUS === 'ALL' ? undefined : values.VISIT_STATUS,
     doctorId,
   });
 
   const visits = visitsResult?.visits || [];
   const totalCount = visitsResult?.count || 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const totalPages = Math.max(1, Math.ceil(totalCount / values.PAGE_SIZE));
   const filteredVisits = useMemo(() => {
-    if (!searchQuery.trim()) return visits;
-    const query = searchQuery.toLowerCase();
+    if (!values.SEARCH.trim()) return visits;
+    const query = values.SEARCH.toLowerCase();
     return visits.filter((visit) => {
       const patient = visit.patient;
       if (!patient) return false;
@@ -166,10 +192,10 @@ export default function VisitsScreen() {
       const reasonMatch = visit.visit_reason?.toLowerCase().includes(query);
       return nameMatch || mobileMatch || reasonMatch;
     });
-  }, [searchQuery, visits]);
+  }, [values.SEARCH, visits]);
 
   const handleCreateVisit = () => {
-    setIsModalOpen(true);
+    createVisitModal.open();
     setStep('mobile');
     setMobileNumber('');
     setFoundPatient(null);
@@ -306,7 +332,7 @@ export default function VisitsScreen() {
         type: 'success',
         title: 'Visit created successfully!',
       });
-      setIsModalOpen(false);
+      createVisitModal.close();
 
       // Reload visits and navigate
       navigate(`/visit/${visit.id}`);
@@ -341,6 +367,8 @@ export default function VisitsScreen() {
     }
   };
 
+  const selectedDoc = clinicDoctors.find((doc) => doc.id === values.DOCTOR_ID);
+
   if (loading) {
     return (
       <div className="h-screen bg-background flex items-center justify-center">
@@ -372,16 +400,18 @@ export default function VisitsScreen() {
             <Input
               type="text"
               placeholder="Search by name, mobile, or reason..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={values.SEARCH}
+              onChange={(e) => updateFilter('SEARCH', e.target.value)}
             />
           </div>
           <div className="sm:w-40 md:w-48">
             <DatePicker
-              value={selectedDate}
+              value={values.DATE}
               onChange={(value) => {
-                setSelectedDate(value);
-                setPage(1);
+                updateMultipleFilters({
+                  DATE: value,
+                  PAGE: 1,
+                });
               }}
               placeholder="Select date"
               className="w-full text-sm"
@@ -390,14 +420,15 @@ export default function VisitsScreen() {
           {clinicDoctors.length > 0 && (
             <div className="flex flex-col items-start gap-2 sm:w-48 md:w-56">
               <Select.Root
-                value={selectedDoctorFilter || undefined}
+                value={values.DOCTOR_ID}
                 onValueChange={(value) => {
-                  setSelectedDoctorFilter(value === 'all' ? '' : value || '');
-                  setPage(1);
+                  updateMultipleFilters({ DOCTOR_ID: value || '', PAGE: 1 });
                 }}
               >
                 <Select.Trigger className="w-full text-sm">
-                  <Select.Value placeholder="All Doctors" />
+                  <Select.Value placeholder="All Doctors">
+                    {selectedDoc?.name || 'All Doctors'}
+                  </Select.Value>
                 </Select.Trigger>
 
                 <Select.Popup>
@@ -416,22 +447,27 @@ export default function VisitsScreen() {
           {/* Visit Status Filter */}
           <div className="flex flex-col items-start gap-2 sm:w-48 md:w-56">
             <Select.Root
-              value={selectedVisitStatus || undefined}
+              value={values.VISIT_STATUS || undefined}
               onValueChange={(value) => {
-                setSelectedVisitStatus(value || 'ALL');
-                setPage(1);
+                updateMultipleFilters({
+                  VISIT_STATUS: value as keyof typeof VISIT_STATUS,
+                  PAGE: 1,
+                });
               }}
             >
               <Select.Trigger className="w-full text-sm">
-                <Select.Value placeholder="All Statuses" />
+                <Select.Value placeholder="All Statuses">
+                  {
+                    STATUS_FILTER.find((s) => s.value === values.VISIT_STATUS)
+                      ?.lable
+                  }
+                </Select.Value>
               </Select.Trigger>
 
               <Select.Popup>
-                <Select.Item value="ALL">All Statuses</Select.Item>
-                <Select.Item value="WAITING">Waiting</Select.Item>
-                <Select.Item value="IN_PROGRESS">In Progress</Select.Item>
-                <Select.Item value="COMPLETED">Completed</Select.Item>
-                <Select.Item value="CANCELLED">Cancelled</Select.Item>
+                {STATUS_FILTER.map(({ lable, value }) => (
+                  <Select.Item value={value}>{lable}</Select.Item>
+                ))}
               </Select.Popup>
             </Select.Root>
           </div>
@@ -439,22 +475,22 @@ export default function VisitsScreen() {
 
         <div className="mb-4 flex items-center justify-between gap-2">
           <div className="text-xs md:text-sm text-gray-600">
-            Page {page} of {totalPages}
+            Page {values.PAGE} of {totalPages}
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="xs"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
+              onClick={() => updateFilter('PAGE', Math.max(1, values.PAGE - 1))}
+              disabled={values.PAGE <= 1}
             >
               Prev
             </Button>
             <Button
               variant="outline"
               size="xs"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
+              onClick={() => updateFilter('PAGE', Math.max(1, values.PAGE + 1))}
+              disabled={values.PAGE >= totalPages}
             >
               Next
             </Button>
@@ -545,8 +581,8 @@ export default function VisitsScreen() {
       </div>
 
       <CreateVisitModal
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        open={createVisitModal.isOpen}
+        onOpenChange={createVisitModal.toggle}
         step={step}
         onStepChange={setStep}
         mobileNumber={mobileNumber}

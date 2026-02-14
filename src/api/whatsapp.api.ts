@@ -2,7 +2,7 @@
 // Currently uses mock API client, ready for backend integration
 
 import { post } from './client';
-import type { Prescription } from '../types';
+import type { Prescription } from '@/types/api';
 
 export interface WhatsAppResponse {
   sent: boolean;

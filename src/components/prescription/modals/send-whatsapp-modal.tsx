@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import type { FollowUp, Medicine } from '@/types';
+import type { FollowUp, Medicine } from '@/types/api';
 
 interface SendWhatsappModalProps {
   open: boolean;

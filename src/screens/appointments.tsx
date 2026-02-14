@@ -13,13 +13,14 @@ import {
   useUpdateAppointmentStatus,
 } from '@/queries/appointments.queries';
 import { useCurrentClinic } from '@/queries/clinic.queries';
-import { APPOINTMENT_STATUS, type Appointment } from '@/types';
+import { type Appointment } from '@/types/api';
 import { formatTimeShort } from '@/utils/date-format';
 import dayjs from 'dayjs';
 import CalendarDays from 'lucide-react/dist/esm/icons/calendar-days';
 import { useMemo } from 'react';
 import { DataTable } from '@/components/ui/table-ui';
 import { ColumnDef } from '@tanstack/react-table';
+import { APPOINTMENT_STATUS } from '@/constants/api';
 
 const STATUS_LABEL = {
   WAITING: 'Waiting',

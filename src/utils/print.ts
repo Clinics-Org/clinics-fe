@@ -1,6 +1,6 @@
 // Print utilities for A4 and Thermal layouts
 
-import type { Patient, Visit, Prescription } from '../types';
+import type { Patient, Visit, Prescription } from '@/types/api';
 import dayjs from 'dayjs';
 
 export const printUtils = {

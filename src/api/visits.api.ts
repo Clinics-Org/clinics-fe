@@ -1,9 +1,10 @@
 // Visit service - Uses API format as per API_SPECIFICATION.md
 // Currently uses mock API client (localStorage), ready for backend integration
 
+import { VISIT_STATUS } from '@/constants/api';
 import { get, post, put, patch } from './client';
 import { ApiError } from '@/lib/query-client';
-import type { Visit, Patient } from '../types';
+import type { Visit, Patient } from '@/types/api';
 import dayjs from 'dayjs';
 
 export const visitService = {
@@ -257,7 +258,7 @@ export const visitService = {
     page: number = 1,
     pageSize: number = 20,
     date?: string,
-    visitStatus?: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
+    visitStatus?: keyof typeof VISIT_STATUS,
     doctorId?: string,
   ): Promise<{
     visits: Visit[];

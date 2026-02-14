@@ -1,9 +1,10 @@
+import { VISIT_STATUS } from '@/constants/api';
 import { create } from 'zustand';
 
 interface FiltersState {
   patientSearch: string;
   setPatientSearch: (value: string) => void;
-  visitStatus: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'ALL';
+  visitStatus: keyof typeof VISIT_STATUS | 'ALL';
   setVisitStatus: (value: FiltersState['visitStatus']) => void;
 }
 

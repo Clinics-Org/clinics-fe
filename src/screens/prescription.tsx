@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Stepper } from '../components/ui/stepper';
 import { getVisitStep, visitSteps } from '../utils/visit-stepper';
-import type { Medicine, Prescription, FollowUp } from '../types';
+import type { Medicine, Prescription, FollowUp } from '@/types/api';
 import { useVisit, useUpdateVisitStatus } from '../queries/visits.queries';
 import {
   usePrescription,

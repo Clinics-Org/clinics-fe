@@ -19,7 +19,7 @@ import AddPatientModal from '@/components/all-patients/modals/add-patient-modal'
 import Users from 'lucide-react/dist/esm/icons/users';
 import { DataTable } from '@/components/ui/table-ui';
 import { ColumnDef } from '@tanstack/react-table';
-import { Patient } from '@/types';
+import { Patient } from '@/types/api';
 
 export const patientsColumns: ColumnDef<Patient>[] = [
   {

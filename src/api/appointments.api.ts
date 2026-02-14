@@ -1,7 +1,7 @@
 // Appointment service - Handles appointment API calls
 
 import { ApiError } from '@/lib/query-client';
-import type { Appointment } from '@/types';
+import type { Appointment } from '@/types/api';
 import { get, put } from './client';
 
 export const appointmentService = {
