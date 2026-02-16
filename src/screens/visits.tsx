@@ -599,6 +599,9 @@ export default function VisitsScreen() {
         onSearchPatient={handleSearchPatient}
         onCreateVisit={handleCreateVisitSubmit}
         searching={searching}
+        isCreating={
+          createVisitMutation.isPending || createPatientMutation.isPending
+        }
       />
     </div>
   );

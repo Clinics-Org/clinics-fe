@@ -42,6 +42,7 @@ interface CreateVisitModalProps {
   onSearchPatient: () => void;
   onCreateVisit: () => void;
   searching: boolean;
+  isCreating: boolean;
 }
 
 export default function CreateVisitModal({
@@ -65,6 +66,7 @@ export default function CreateVisitModal({
   onSearchPatient,
   onCreateVisit,
   searching,
+  isCreating,
 }: CreateVisitModalProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -259,6 +261,7 @@ export default function CreateVisitModal({
                 onOpenChange(false);
               }
             }}
+            disabled={searching || isCreating}
           >
             {step === 'mobile' ? 'Cancel' : 'Back'}
           </Button>
@@ -267,13 +270,10 @@ export default function CreateVisitModal({
             onClick={() => {
               step === 'mobile' ? onSearchPatient() : onCreateVisit();
             }}
-            disabled={searching}
+            disabled={searching || isCreating}
+            loading={searching || isCreating}
           >
-            {searching
-              ? 'Searching...'
-              : step === 'mobile'
-                ? 'Search'
-                : 'Create Visit'}
+            {step === 'mobile' ? 'Search' : 'Create Visit'}
           </Button>
         </Dialog.Footer>
       </Dialog.Popup>
