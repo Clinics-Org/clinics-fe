@@ -16,34 +16,45 @@ interface NavItem {
   name: string;
   path: string;
   icon: React.ReactNode;
+  showInTabs: boolean;
 }
 
 export const navItems: NavItem[] = [
-  { name: 'Home', path: '/', icon: <Home className="size-4" /> },
+  {
+    name: 'Home',
+    path: '/',
+    icon: <Home className="size-4" />,
+    showInTabs: true,
+  },
   {
     name: 'Appointments',
     path: '/appointments',
     icon: <CalendarDays className="size-4" />,
+    showInTabs: true,
   },
   {
     name: 'Queue',
     path: '/visits',
     icon: <ClipboardList className="size-4" />,
+    showInTabs: true,
   },
   {
-    name: 'All Patients',
+    name: 'Patients',
     path: '/patients',
     icon: <Users className="size-4" />,
+    showInTabs: true,
   },
   {
     name: 'Doctor Schedule',
     path: '/doctor-schedule',
     icon: <ClipboardClock className="size-4" />,
+    showInTabs: false,
   },
   {
     name: 'Settings',
     path: '/settings',
     icon: <Settings className="size-4" />,
+    showInTabs: false,
   },
 ];
 
