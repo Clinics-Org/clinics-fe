@@ -12,7 +12,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const sidebarState = useSidebarState();
 
   return (
-    <div className="md:min-h-screen h-[calc(100vh-20px)] bg-gray-50 overflow-x-hidden overflow-hidden">
+    <div className="md:min-h-screen h-[calc(100vh-20px)] bg-background overflow-x-hidden overflow-hidden">
       <div className="flex">
         {/* Sidebar - hidden on mobile, visible on desktop */}
         <div className="hidden md:block">
@@ -20,7 +20,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
         <main
           className={cn('flex-1 transition-all duration-300', 'pb-16 md:pb-0', {
-            'ml-0': sidebarState.collapsed,
+            'ml-0 md:ml-12': sidebarState.collapsed,
             'md:ml-64': !sidebarState.collapsed,
           })}
         >

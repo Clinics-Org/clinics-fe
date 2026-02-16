@@ -1,6 +1,14 @@
 import { validatePhoneNumber } from '@/utils/phone-validation';
 import { z } from 'zod';
 
+export const SOURCE = {
+  PHONE: 'PHONE',
+  WHATSAPP: 'WHATSAPP',
+  WALK_IN: 'WALK_IN',
+  WEBSITE: 'WEBSITE',
+  OTHER: 'OTHER',
+};
+
 export const bookSlotSchema = z.object({
   name: z.string().min(1, 'Name is required').trim(),
   mobile: z.string().superRefine((val, ctx) => {
@@ -15,7 +23,5 @@ export const bookSlotSchema = z.object({
   gender: z.enum(['MALE', 'FEMALE', 'OTHER'], {
     message: 'Gender is required',
   }),
-  source: z
-    .enum(['PHONE', 'WHATSAPP', 'WALK_IN', 'WEBSITE', 'OTHER'])
-    .optional(),
+  source: z.enum(Object.values(SOURCE)).optional(),
 });

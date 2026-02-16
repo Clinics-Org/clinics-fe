@@ -10,7 +10,7 @@ import { ModalControl } from '@/hooks/use-modal';
 import { useCurrentClinic } from '@/queries/clinic.queries';
 import { usePatientSearchLazy } from '@/queries/patients.queries';
 import { useAvailableSlots, useBookSlot } from '@/queries/slots.queries';
-import { bookSlotSchema } from '@/schema/book-slot.schema';
+import { bookSlotSchema, SOURCE } from '@/schema/book-slot.schema';
 import { mobileSearchSchema } from '@/schema/mobile-search-schema';
 import type { AvailableSlot, Patient } from '@/types/api';
 import {
@@ -37,6 +37,29 @@ type MobileSearchForm = z.infer<typeof mobileSearchSchema>;
 type BookSlotForm = z.infer<typeof bookSlotSchema>;
 
 type Step = 'mobile' | 'slot-picker' | 'patient-form';
+
+const SOURCE_OPTIONS = [
+  {
+    value: SOURCE.PHONE,
+    lable: 'Phone',
+  },
+  {
+    value: SOURCE.WHATSAPP,
+    lable: 'WhatsApp',
+  },
+  {
+    value: SOURCE.WALK_IN,
+    lable: 'Walk in',
+  },
+  {
+    value: SOURCE.WEBSITE,
+    lable: 'Website',
+  },
+  {
+    value: SOURCE.OTHER,
+    lable: 'Other',
+  },
+];
 
 export default function CreateAppointmentDialog(
   props: CreateAppointmentDialogProps,
@@ -111,7 +134,7 @@ export default function CreateAppointmentDialog(
       name: '',
       mobile: '',
       gender: undefined,
-      source: 'PHONE',
+      source: SOURCE.PHONE,
     },
   });
 
@@ -135,7 +158,7 @@ export default function CreateAppointmentDialog(
           name: patient.name || '',
           mobile: patient.mobile || data.mobile,
           gender: genderMap[patient.gender || ''] || undefined,
-          source: 'PHONE',
+          source: SOURCE.PHONE,
         });
       } else {
         setFoundPatient(null);
@@ -143,7 +166,7 @@ export default function CreateAppointmentDialog(
           name: '',
           mobile: data.mobile,
           gender: undefined,
-          source: 'PHONE',
+          source: SOURCE.PHONE,
         });
       }
 
@@ -180,7 +203,7 @@ export default function CreateAppointmentDialog(
         name: data.name.trim(),
         mobile_number: formatPhoneForAPI(data.mobile),
         gender: data.gender,
-        source: data.source || 'PHONE',
+        source: data.source || SOURCE.PHONE,
       });
 
       toast.add({ title: 'Appointment booked successfully!', type: 'success' });
@@ -570,7 +593,7 @@ export default function CreateAppointmentDialog(
                   <Field.Label>Source</Field.Label>
                   <Field.Item block>
                     <Select.Root
-                      value={patientForm.watch('source') || 'PHONE'}
+                      value={patientForm.watch('source') || SOURCE.PHONE}
                       onValueChange={(value) => {
                         if (value) {
                           patientForm.setValue(
@@ -581,14 +604,21 @@ export default function CreateAppointmentDialog(
                       }}
                     >
                       <Select.Trigger className="w-full">
-                        <Select.Value placeholder="Select source" />
+                        <Select.Value placeholder="Select source">
+                          {
+                            SOURCE_OPTIONS.find(
+                              ({ value }) =>
+                                patientForm.watch('source') === value,
+                            )?.lable
+                          }
+                        </Select.Value>
                       </Select.Trigger>
                       <Select.Popup>
-                        <Select.Item value="PHONE">Phone</Select.Item>
-                        <Select.Item value="WHATSAPP">WhatsApp</Select.Item>
-                        <Select.Item value="WALK_IN">Walk In</Select.Item>
-                        <Select.Item value="WEBSITE">Website</Select.Item>
-                        <Select.Item value="OTHER">Other</Select.Item>
+                        {SOURCE_OPTIONS.map(({ lable, value }) => (
+                          <Select.Item key={value} value={value}>
+                            {lable}
+                          </Select.Item>
+                        ))}
                       </Select.Popup>
                     </Select.Root>
                   </Field.Item>
