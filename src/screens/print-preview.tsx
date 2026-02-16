@@ -62,7 +62,7 @@ export default function PrintPreviewScreen() {
     <div className="h-screen bg-background overflow-x-hidden">
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-6">
         {/* Visit Progress Stepper */}
-        <Card.Root className="mb-4 border-teal-200">
+        <Card.Root className="mb-4 border-primary/20">
           <Card.Panel className="pt-4 pb-4">
             <Stepper steps={visitSteps} currentStep={visitSteps.length} />
           </Card.Panel>
@@ -81,24 +81,18 @@ export default function PrintPreviewScreen() {
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as 'a4' | 'thermal')}
         >
-          <Tabs.List className="flex w-full overflow-x-auto border-b border-gray-200 mb-6 -mx-4 md:mx-0 px-4 md:px-0">
-            <Tabs.Tab
-              value="a4"
-              className="shrink-0 px-4 md:px-6 py-3 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-teal-600 data-[state=active]:text-teal-700 hover:text-gray-700"
-            >
+          <Tabs.List>
+            <Tabs.Tab className="text-xs" value="a4">
               A4 Prescription
             </Tabs.Tab>
-            <Tabs.Tab
-              value="thermal"
-              className="shrink-0 px-4 md:px-6 py-3 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-teal-600 data-[state=active]:text-teal-700 hover:text-gray-700"
-            >
+            <Tabs.Tab className="text-xs" value="thermal">
               Thermal
             </Tabs.Tab>
           </Tabs.List>
 
           <Tabs.Panel value="a4">
-            <Card.Root className="p-4 md:p-8 bg-white overflow-x-auto">
-              <div className="max-w-[210mm] mx-auto min-w-0">
+            <Card.Root className="p-4 md:p-8 bg-white overflow-x-auto md:mb-0 mb-24">
+              <div className="max-w-[210mm] md:mx-auto min-w-0">
                 {/* A4 Layout */}
                 <div className="text-center mb-6 md:mb-8 pb-3 md:pb-4 border-b-2 border-black">
                   <div className="text-lg md:text-2xl font-bold wrap-break-word">
@@ -129,20 +123,47 @@ export default function PrintPreviewScreen() {
                   </div>
                 )}
 
-                <div className="overflow-x-auto mb-6">
+                {/* Mobile: stacked cards */}
+                <div className="md:hidden mb-6">
+                  {prescription.medicines.map((med, idx) => (
+                    <div
+                      key={idx}
+                      className="border border-gray-300 rounded-lg p-3 space-y-1 text-sm"
+                    >
+                      <div className="font-semibold">{med.name}</div>
+                      <div>
+                        <span className="text-gray-500">Dosage:</span>{' '}
+                        {med.dosage}
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Duration:</span>{' '}
+                        {med.duration}
+                      </div>
+                      {med.notes && (
+                        <div>
+                          <span className="text-gray-500">Notes:</span>{' '}
+                          {med.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="hidden md:block overflow-x-auto mb-6">
                   <table className="w-full border-collapse border border-gray-300 min-w-150">
                     <thead>
                       <tr className="bg-gray-100">
-                        <th className="border border-gray-300 px-2 md:px-4 py-2 text-left text-sm md:text-base">
+                        <th className="border border-gray-300 px-4 py-2 text-left text-base">
                           Medicine
                         </th>
-                        <th className="border border-gray-300 px-2 md:px-4 py-2 text-left text-sm md:text-base">
+                        <th className="border border-gray-300 px-4 py-2 text-left text-base">
                           Dosage
                         </th>
-                        <th className="border border-gray-300 px-2 md:px-4 py-2 text-left text-sm md:text-base">
+                        <th className="border border-gray-300 px-4 py-2 text-left text-base">
                           Duration
                         </th>
-                        <th className="border border-gray-300 px-2 md:px-4 py-2 text-left text-sm md:text-base">
+                        <th className="border border-gray-300 px-4 py-2 text-left text-base">
                           Notes
                         </th>
                       </tr>
@@ -150,16 +171,16 @@ export default function PrintPreviewScreen() {
                     <tbody>
                       {prescription.medicines.map((med, idx) => (
                         <tr key={idx}>
-                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base wrap-break-word">
+                          <td className="border border-gray-300 px-4 py-2 text-base wrap-break-word">
                             {med.name}
                           </td>
-                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base wrap-break-word">
+                          <td className="border border-gray-300 px-4 py-2 text-base wrap-break-word">
                             {med.dosage}
                           </td>
-                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base wrap-break-word">
+                          <td className="border border-gray-300 px-4 py-2 text-base wrap-break-word">
                             {med.duration}
                           </td>
-                          <td className="border border-gray-300 px-2 md:px-4 py-2 text-sm md:text-base wrap-break-word">
+                          <td className="border border-gray-300 px-4 py-2 text-base wrap-break-word">
                             {med.notes || '-'}
                           </td>
                         </tr>
@@ -175,9 +196,11 @@ export default function PrintPreviewScreen() {
                   </p>
                 )}
 
-                <div className="mt-16 text-right">
-                  <div className="inline-block border-t border-black w-48 mt-12"></div>
-                  <p className="mt-2">Doctor's Signature</p>
+                <div className="mt-10 md:mt-16 text-right">
+                  <div className="inline-block border-t border-black w-36 md:w-48 mt-8 md:mt-12"></div>
+                  <p className="mt-2 text-sm md:text-base">
+                    Doctor's Signature
+                  </p>
                 </div>
               </div>
             </Card.Root>
