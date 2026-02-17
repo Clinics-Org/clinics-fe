@@ -19,7 +19,6 @@ import {
 import type { DoctorWorkingHour } from '@/types/api';
 import { formatTimeShort } from '@/utils/date-format';
 import dayjs from 'dayjs';
-import Clock from 'lucide-react/dist/esm/icons/clock';
 import Edit2 from 'lucide-react/dist/esm/icons/edit-2';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
@@ -196,8 +195,8 @@ export default function DoctorScheduleSettingsScreen() {
   const loading = whLoading || odLoading;
 
   return (
-    <div className="h-screen bg-background overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">
+    <div className="h-screen bg-background overflow-x-hidden ">
+      <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6 md:mb-0 mb-24">
         {/* Header */}
         <div className="mb-4 md:mb-3">
           <div className="flex items-start justify-between gap-3 mb-3">
