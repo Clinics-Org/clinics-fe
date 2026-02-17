@@ -39,12 +39,17 @@ export default function PrintPreviewScreen() {
     try {
       if (!visit || !patient || !prescription || !visit.prescription_id) return;
 
+      const newTab = window.open('', '_blank'); // ✅ allowed (user gesture)
+
       const res = await getPdfLazy.mutateAsync({
         prescriptionId: visit.prescription_id,
       });
 
       window.open(res?.pdf_url, '_blank');
       console.re.log(res);
+
+      // @ts-ignore
+      newTab.location.href = res?.pdf_url; // ✅ works on iOS Safari
 
       // Update visit status to completed after printing
       if (visitId) {
